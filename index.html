@@ -1,12 +1,260 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>Fiakomon Card Generator</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Fiakomon Card Generator</title>
+<style>
+  :root{
+    --bg:#0f1221; --panel:#171a30; --muted:#aab3d1; --txt:#eef1ff; --accent:#6cf;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;background:linear-gradient(180deg,#0e1020,#0a0c16);}
+  body{color:var(--txt);font-family:system-ui,Segoe UI,Arial,Verdana,sans-serif}
+  .wrap{display:grid;grid-template-columns:360px 1fr;gap:20px;max-width:1200px;margin:24px auto;padding:0 16px}
+  .card{background:var(--panel);border:1px solid #23274b;border-radius:14px;padding:16px}
+  h1{font-size:20px;margin:0 0 8px}
+  .muted{color:var(--muted);font-size:12px;margin:0 0 16px}
+  label{font-weight:700;font-size:12px;display:block;margin:12px 0 6px}
+  input[type=text],input[type=number],select{
+    width:100%;padding:10px;border-radius:10px;border:1px solid #2b2f57;background:#0f1230;color:var(--txt);
+  }
+  input[type=color]{width:64px;height:36px;padding:0;border:0;background:#0f1230;border-radius:8px}
+  .row{display:flex;gap:10px}
+  .row>*{flex:1}
+  .btn{
+    appearance:none;border:0;border-radius:12px;padding:12px 14px;background:linear-gradient(135deg,#4cc9f0,#4361ee);
+    color:#fff;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(67,97,238,.35)
+  }
+  .btn:active{transform:translateY(1px)}
+  canvas{width:min(520px,90vw);height:auto;background:#e8eaf7;border-radius:18px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+  .preview{display:grid;place-items:center}
+  footer{max-width:1200px;margin:18px auto 32px;color:#97a0c8;font-size:12px;padding:0 16px}
+</style>
 </head>
 <body>
-  <h1>Bienvenue sur le générateur de cartes Fiakomon 🎴</h1>
-  <p>Ici tu pourras créer tes propres cartes.</p>
+  <div class="wrap">
+    <section class="card">
+      <h1>Fiakomon – Générateur de carte</h1>
+      <p class="muted">Remplis les champs, l’aperçu se met à jour en direct. Clique ensuite sur <b>Télécharger</b>.</p>
+
+      <label for="name">Nom</label>
+      <input id="name" type="text" placeholder="Ex : Noah Mario" value="Noah Mario" />
+
+      <div class="row">
+        <div>
+          <label for="hp">PV</label>
+          <input id="hp" type="number" min="10" max="400" step="10" value="120" />
+        </div>
+        <div>
+          <label for="rarity">Rareté</label>
+          <select id="rarity">
+            <option value="★">★ Classique</option>
+            <option value="★★">★★ Rare</option>
+            <option value="EX" selected>EX</option>
+            <option value="Ω">Ω Légende</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="type">Type</label>
+          <select id="type">
+            <option>Feu</option><option>Eau</option><option>Plante</option>
+            <option selected>Fée</option><option>Ténèbres</option><option>Électrik</option>
+          </select>
+        </div>
+        <div>
+          <label for="frameColor">Couleur du cadre</label>
+          <input id="frameColor" type="color" value="#ff5aa5" />
+        </div>
+      </div>
+
+      <label for="attack">Attaque</label>
+      <input id="attack" type="text" placeholder="Nom de l’attaque" value="Casquette" />
+
+      <div class="row">
+        <div>
+          <label for="damage">Dégâts</label>
+          <input id="damage" type="number" min="0" max="500" step="10" value="120" />
+        </div>
+        <div>
+          <label for="cost">Coût (⚡)</label>
+          <input id="cost" type="number" min="0" max="4" value="2" />
+        </div>
+      </div>
+
+      <label for="illus">Illustration (PNG/JPG)</label>
+      <input id="illus" type="file" accept="image/*" />
+
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <button id="downloadBtn" class="btn">📥 Télécharger en PNG</button>
+        <button id="clearImg" class="btn" style="background:linear-gradient(135deg,#ee6055,#ff9b85)">🗑️ Retirer l’illustration</button>
+      </div>
+    </section>
+
+    <section class="preview">
+      <canvas id="card" width="900" height="1250" aria-label="Aperçu carte"></canvas>
+    </section>
+  </div>
+
+  <footer>✨ Prototype minimal – 100% côté client (HTML/CSS/Canvas). Tu pourras ensuite personnaliser le design “Fiakomon”.</footer>
+
+<script>
+(() => {
+  const dom = (id)=>document.getElementById(id);
+  const cvs = dom('card');
+  const ctx = cvs.getContext('2d');
+
+  // Champs
+  const $name=dom('name'), $hp=dom('hp'), $rar=dom('rarity'),
+        $type=dom('type'), $frame=dom('frameColor'),
+        $atk=dom('attack'), $dmg=dom('damage'), $cost=dom('cost'),
+        $illus=dom('illus'), $dl=dom('downloadBtn'), $clear=dom('clearImg');
+
+  // Illustration chargée (Image bitmap)
+  let illusImg = null;
+
+  // Dessin de la carte
+  function draw(){
+    const W=cvs.width, H=cvs.height;
+
+    // Fond dégradé + pattern léger
+    const g=ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,'#f7f8ff'); g.addColorStop(1,'#ebeeff');
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+
+    // Cadre extérieur
+    const frameColor=$frame.value;
+    roundRect(20,20,W-40,H-40,28, '#111631', true);
+    roundRect(28,28,W-56,H-56,24, frameColor, true);
+
+    // Bandeau titre
+    roundRect(56,64,W-112,86,18,'#111631',true);
+    roundRect(60,68,W-120,78,14,'#ffffff',true);
+
+    ctx.fillStyle='#111631';
+    ctx.font='bold 48px system-ui,Segoe UI,Arial';
+    ctx.textBaseline='middle';
+    ctx.fillText(($name.value||'Fiakomon').slice(0,24), 84, 108);
+
+    // PV
+    ctx.textAlign='right';
+    ctx.font='bold 44px system-ui,Segoe UI,Arial';
+    ctx.fillStyle='#e53935';
+    ctx.fillText($hp.value+' PV', W-84, 108);
+    ctx.textAlign='left';
+
+    // Etiquettes type + rareté
+    pill(84,150,120,36, '#111631'); text(144,168,$type.value, 18, '#fff', 'center');
+    pill(W-240,150,140,36, '#111631'); text(W-170,168,$rar.value, 18, '#fff','center');
+
+    // Fenêtre illustration
+    roundRect(64,210,W-128,520,18,'#111631',true);
+    roundRect(70,216,W-140,508,14,'#ffffff',true);
+
+    if(illusImg){
+      const pad=18;
+      const box={x:70+pad,y:216+pad,w:W-140-pad*2,h:508-pad*2};
+      // cover
+      const r = Math.max(box.w/illusImg.width, box.h/illusImg.height);
+      const w = illusImg.width*r, h = illusImg.height*r;
+      const x = box.x + (box.w-w)/2, y = box.y + (box.h-h)/2;
+      ctx.drawImage(illusImg,x,y,w,h);
+    }else{
+      ctx.fillStyle='#c9cfea'; ctx.textAlign='center';
+      text(W/2, 470, 'Aucune illustration', 20, '#657', 'center');
+      ctx.textAlign='left';
+    }
+
+    // Zone Attaque
+    roundRect(56,760,W-112,130,18,'#111631',true);
+    roundRect(60,764,W-120,122,14,'#ffffff',true);
+
+    // coût (⚡)
+    let cost=parseInt($cost.value||0,10);
+    cost=Math.max(0,Math.min(4,cost));
+    for(let i=0;i<cost;i++){
+      ctx.beginPath();
+      ctx.arc(92 + i*42, 825, 16, 0, Math.PI*2);
+      ctx.fillStyle='#111631'; ctx.fill();
+      text(92+i*42, 825, '⚡', 18, '#fff','center');
+    }
+
+    // nom attaque + dégâts
+    text(92 + cost*42 + 10, 825, ($atk.value||'Attaque').slice(0,22), 28, '#111631', 'left', 'middle');
+    ctx.textAlign='right';
+    text(W-92, 825, ($dmg.value||0).toString(), 42, '#111631', 'right', 'middle');
+    ctx.textAlign='left';
+
+    // Bandeau bas (logo)
+    roundRect(56,H-150,W-112,86,18,'#111631',true);
+    roundRect(60,H-146,W-120,78,14,'#ffffff',true);
+    text(W/2, H-107, 'FIAKOMON TCG • Prototype', 18, '#111631','center');
+
+    // Ombre carte (esthétique)
+    ctx.save();
+    ctx.shadowColor='rgba(0,0,0,.25)'; ctx.shadowBlur=24;
+    ctx.restore();
+  }
+
+  function roundRect(x,y,w,h,r, color, fill=true){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r);
+    ctx.closePath();
+    if(fill){ ctx.fillStyle=color; ctx.fill(); } else { ctx.strokeStyle=color; ctx.stroke(); }
+  }
+  function pill(x,y,w,h,color){ roundRect(x,y,w,h,h/2,color,true) }
+  function text(x,y,str,size,color,align='left',baseline='alphabetic'){
+    ctx.fillStyle=color; ctx.font=`${size}px system-ui,Segoe UI,Arial`; ctx.textAlign=align; ctx.textBaseline=baseline;
+    ctx.fillText(str,x,y);
+  }
+
+  // Entrées → redraw
+  for(const id of ['name','hp','rarity','type','frameColor','attack','damage','cost']){
+    document.getElementById(id).addEventListener('input', draw);
+  }
+
+  // Image upload
+  $illus.addEventListener('change', async (e)=>{
+    const file = e.target.files?.[0];
+    if(!file){ illusImg=null; draw(); return; }
+    const dataUrl = await fileToDataURL(file);
+    illusImg = await loadImage(dataUrl);
+    draw();
+  });
+  $clear.addEventListener('click', ()=>{
+    $illus.value=''; illusImg=null; draw();
+  });
+
+  // Télécharger
+  $dl.addEventListener('click', ()=>{
+    const link=document.createElement('a');
+    link.download = `${($name.value||'fiakomon')}.png`;
+    link.href=cvs.toDataURL('image/png');
+    link.click();
+  });
+
+  function fileToDataURL(file){
+    return new Promise((res,rej)=>{
+      const r=new FileReader();
+      r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file);
+    });
+  }
+  function loadImage(src){
+    return new Promise((res,rej)=>{
+      const im = new Image(); im.onload=()=>res(im); im.onerror=rej; im.src=src;
+    });
+  }
+
+  // Premier rendu
+  draw();
+})();
+</script>
 </body>
 </html>
-

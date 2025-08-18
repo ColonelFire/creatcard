@@ -132,16 +132,22 @@
 
   // -------- Draw helpers
   function rr(x,y,w,h,r, fill, color){
-    ctx.beginPath();
-    ctx.moveTo(x+r,y);
-    ctx.arcTo(x+w,y,x+w,y+h,r);
-    ctx.arcTo(x+w,y+h,x,y+h,r);
-    ctx.arcTo(x,y+h,x,y,r);
-    ctx.arcTo(x,y,x+w,y,r);
-    ctx.closePath();
-    ctx[fill?'fill':'strokeStyle' in ctx ? 'stroke':'fillStyle'] = color;
-    fill ? (ctx.fillStyle=color, ctx.fill()) : (ctx.strokeStyle=color, ctx.stroke());
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+  if (fill) { 
+    ctx.fillStyle = color; 
+    ctx.fill(); 
+  } else {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
   }
+}
   function text(x,y,str,size,color,align='left',base='alphabetic'){
     ctx.fillStyle=color; ctx.font=`${size}px system-ui,Segoe UI,Arial`; ctx.textAlign=align; ctx.textBaseline=base;
     ctx.fillText(str,x,y);
@@ -203,18 +209,15 @@
     g.addColorStop(0,'#f7f8ff'); g.addColorStop(1,'#ebeeff');
     ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
 
-    if(full){
-      // FULL-ART: image sur toute la carte, pas de bordure
-      if(illusImg) drawImageCover(illusImg, m, m, W-2*m, H-2*m);
-      rr(m,m,W-2*m,H-2*m,26,false,''); // just to keep rounded mask look
-      // panneau bas translucide (≈ 2/5 du bas)
-      const ph = Math.floor(H*0.34);
-      ctx.fillStyle = hexToRGBA(band, 0.78);
-      rr(m+20, H-ph-20, W-2*(m+20), ph, 18, true, ctx.fillStyle);
-      // Nom centré en haut du panneau
-      text(W/2, H-ph-20+36, (f.name.value||'Sans nom'), 44, '#ffffff','center','alphabetic');
-      ctx.font='18px system-ui,Segoe UI,Arial';
-      wrapText(f.desc.value, m+40, H-ph-20+72, W-2*(m+40), 28, '#ffffff','left');
+   if (full){
+  if(illusImg) drawImageCover(illusImg, m, m, W-2*m, H-2*m);
+  const ph = Math.floor(H*0.34);
+  ctx.fillStyle = hexToRGBA(band, 0.78);
+  rr(m+20, H-ph-20, W-2*(m+20), ph, 18, true, ctx.fillStyle);
+  text(W/2, H-ph-20+36, (f.name.value||'Sans nom'), 44, '#ffffff','center','alphabetic');
+  ctx.font='18px system-ui,Segoe UI,Arial';
+  wrapText(f.desc.value, m+40, H-ph-20+72, W-2*(m+40), 28, '#ffffff','left');
+}
 
     }else{
       // CADRE : bord + grande zone illustration en haut, bandeau coloré en bas

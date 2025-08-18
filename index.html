@@ -1,384 +1,233 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Générateur de cartes TCG</title>
-<style>
-  :root{
-    --bg:#0b1020;
-    --panel:#111827;
-    --ink:#e5e7eb;
-    --muted:#9ca3af;
-    --accent:#6366f1;
-  }
-  *{box-sizing:border-box}
-  body{
-    margin:0; background:radial-gradient(1200px 600px at 20% 0%, #151b35, #0b1020);
-    color:var(--ink); font:16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
-    display:flex; flex-direction:column; min-height:100vh;
-  }
-  header{padding:18px 20px 6px; display:flex; align-items:center; gap:10px}
-  header h1{margin:0; font-size:18px; font-weight:700; letter-spacing:.3px}
-  .app{display:grid; grid-template-columns: 360px 1fr; gap:18px; padding:14px 20px 28px; width:100%; max-width:1400px; margin:0 auto; flex:1}
-  .card{background:#0f162f; border:1px solid #1f2a4d; border-radius:16px; padding:14px; box-shadow:0 10px 30px rgba(0,0,0,.35)}
-  .controls{display:grid; gap:10px}
-  .row{display:grid; gap:8px}
-  .row.two{grid-template-columns:1fr 1fr; gap:10px}
-  label{font-size:12px; color:var(--muted); letter-spacing:.3px}
-  input[type="text"], input[type="number"], select, textarea{
-    width:100%; border:1px solid #243055; background:#0b132a; color:var(--ink);
-    border-radius:10px; padding:10px 12px; outline:none; transition:border .15s;
-  }
-  textarea{min-height:110px; resize:vertical}
-  input[type="file"]{border:1px dashed #2a396d; padding:10px; border-radius:10px; background:#0b132a}
-  input:focus, select:focus, textarea:focus{border-color:#3b82f6}
-  .btn{
-    display:inline-flex; align-items:center; justify-content:center; gap:8px;
-    background:#1f39a4; border:1px solid #2b46b1; color:white; padding:10px 14px; border-radius:12px;
-    cursor:pointer; font-weight:700; letter-spacing:.3px; text-decoration:none; user-select:none;
-  }
-  .btn.secondary{background:#0b132a; border-color:#2a396d; color:#d1d5db}
-  .btn:active{transform:translateY(1px)}
-  canvas{width:100%; height:auto; display:block; background:#0b132a; border-radius:16px}
-  .preview.card{padding:0}
-  .help{font-size:12px; color:#a5b4fc}
-  footer{padding:10px 20px 20px; color:#94a3b8; font-size:12px; text-align:center}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Générateur de cartes TCG</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
+  <style>
+    :root{
+      /* Couleurs (approximations faciles à modifier) */
+      --commun:       #8bc34a;   /* vert badge */
+      --peucommun:    #ffc107;   /* jaune badge */
+      --rare:         #ff7043;   /* orange badge */
+      --epic:         #f44336;   /* rouge badge */
+      --legendaire:   #f06292;   /* rose badge */
+      --exclusif:     #00c7a7;   /* turquoise badge */
+      --anthracite:   #2f2f35;   /* bordures communes/unco */
+      --noir:         #000;
+      --fond:         #0d0f13;
+      --paper:        #f5f5f5;
+    }
+    *{box-sizing:border-box}
+    body{margin:0; background:var(--fond); color:#e9eef3; font-family:Inter,system-ui,Segoe UI,Roboto,Arial,Helvetica,sans-serif;}
+
+    .wrap{max-width:1100px; margin:24px auto; padding:0 16px;}
+    h1{font-size:24px; font-weight:800; letter-spacing:0.3px; margin:0 0 12px}
+    .grid{display:grid; grid-template-columns: 360px 1fr; gap:18px}
+    @media (max-width: 980px){ .grid{grid-template-columns:1fr} }
+
+    /* ====== CARTE ====== */
+    .stage{display:flex; align-items:center; justify-content:center;}
+    .card{ position:relative; width:750px; height:1050px; border-radius:24px; background:#111; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.45);}
+    .card.border{ padding:18px;}
+    .card.border::before{ /* contour externe net */
+      content:""; position:absolute; inset:0; border-radius:24px; box-shadow:0 0 0 2px rgba(255,255,255,.05) inset; pointer-events:none;
+    }
+
+    .frame{ position:absolute; inset:0; border-radius:16px; overflow:hidden;}
+
+    /* illustration */
+    .art{ position:absolute; left:0; top:0; width:100%; height:65%; object-fit:cover; }
+    .fullbleed .art{ height:100%; }
+
+    /* barre horizontale (2/5 du bas \u2192 60% de hauteur) */
+    .sep{ position:absolute; left:18px; right:18px; top:60%; height:2px; background:rgba(255,255,255,.8); border-radius:1px; display:none;}
+
+    /* Panneau de texte bas */
+    .panel{ position:absolute; left:0; right:0; bottom:0; height:40%; background:rgba(245,245,245,.95); color:#0f0f14; padding:22px 26px 18px; display:flex; flex-direction:column; gap:10px;}
+    .panel.tinted{ color:#0b0e11; }
+
+    .name{ font-family:"Bebas Neue", system-ui, -apple-system, sans-serif; font-size:56px; letter-spacing:1.5px; text-align:center; line-height:1; text-transform:uppercase; margin-top:2px;}
+    .attacks{ flex:1; white-space:pre-wrap; line-height:1.25; font-size:22px; }
+
+    .meta{ display:flex; justify-content:space-between; font-size:18px; opacity:.9;}
+    .meta .left{ max-width:70%;}
+
+    /* Octogones de coins (1/4 d\'octogone) */
+    .corner{ position:absolute; width:120px; height:120px; background:var(--paper); color:#0f0f14; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:22px;}
+    .corner span{ transform:translateY(-2px) }
+    .corner.tl{ top:0; left:0; clip-path:polygon(0 0, 100% 0, 100% 36%, 36% 100%, 0 100%); border-bottom-right-radius:16px; box-shadow: 0 1px 0 rgba(0,0,0,.35) inset, 0 3px 18px rgba(0,0,0,.25);}
+    .corner.tr{ top:0; right:0; clip-path:polygon(0 0, 100% 0, 100% 100%, 64% 100%, 0 36%); border-bottom-left-radius:16px; box-shadow: 0 1px 0 rgba(0,0,0,.35) inset, 0 3px 18px rgba(0,0,0,.25);}    
+
+    /* Variantes de rareté (appliquées via classes) */
+    .r-commun.border{ border:18px solid var(--anthracite);}    
+    .r-peucommun.border{ border:18px solid var(--anthracite);} 
+    .r-rare.border{ border:20px solid var(--noir);}    
+
+    .r-commun   .panel{ background:color-mix(in sRGB, var(--commun) 28%, #ffffff 72%);}
+    .r-peucommun .panel{ background:color-mix(in sRGB, var(--peucommun) 32%, #ffffff 68%);} 
+    .r-rare      .panel{ background:color-mix(in sRGB, var(--rare) 34%, #ffffff 66%);} 
+
+    .r-epic .panel, .r-legendaire .panel, .r-exclusif .panel{ background:rgba(255,255,255,.06); backdrop-filter: blur(6px); color:#fff; text-shadow:0 1px 0 rgba(0,0,0,.35);}    
+    .r-epic .panel{ background:color-mix(in sRGB, var(--epic) 40%, rgba(0,0,0,.55) 60%);} 
+    .r-legendaire .panel{ background:color-mix(in sRGB, var(--legendaire) 40%, rgba(0,0,0,.55) 60%);} 
+    .r-exclusif .panel{ background:color-mix(in sRGB, var(--exclusif) 40%, rgba(0,0,0,.55) 60%);} 
+
+    .show-sep .sep{ display:block }
+
+    /* UI */
+    .controls{ background:#0f131a; border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:16px; display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+    .controls label{ font-size:12px; text-transform:uppercase; letter-spacing:.08em; opacity:.9 }
+    .controls input[type="text"], .controls input[type="number"], .controls textarea, .controls select{ width:100%; background:#121722; color:#e3e8ee; border:1px solid rgba(255,255,255,.1); border-radius:10px; padding:10px 12px; font-size:14px; outline:none}
+    .controls textarea{ min-height:98px; grid-column:1/-1 }
+
+    .row{ display:flex; gap:8px; align-items:end }
+    .btn{ background:#1f2a3a; border:1px solid rgba(255,255,255,.12); color:#e6edf5; padding:10px 12px; border-radius:10px; cursor:pointer; font-weight:600;}
+    .btn:hover{ filter:brightness(1.1)}
+    .hint{ font-size:12px; opacity:.8; }
+
+    .footer-note{margin-top:10px; font-size:12px; opacity:.7}
+  </style>
 </head>
 <body>
-  <header>
+  <div class="wrap">
     <h1>Générateur de cartes TCG</h1>
-    <span class="help">— importe une image, remplis les champs, choisis la rareté, puis télécharge.</span>
-  </header>
-
-  <main class="app">
-    <section class="card controls">
-      <div class="row">
-        <label for="rarity">Rareté</label>
-        <select id="rarity">
-          <option>Commun</option>
-          <option>Peu Commun</option>
-          <option>Rare</option>
-          <option>Epic</option>
-          <option>Légendaire</option>
-          <option>Exclusif</option>
-        </select>
-      </div>
-
-      <div class="row">
-        <label for="name">Nom de la créature</label>
-        <input id="name" type="text" placeholder="Ex. Astroslip" />
-      </div>
-
-      <div class="row two">
-        <div>
-          <label for="set">Extension (coin haut-gauche)</label>
-          <input id="set" type="text" placeholder="Ex. CL01" />
-        </div>
-        <div>
-          <label for="hp">PV (numéro seul)</label>
-          <input id="hp" type="number" inputmode="numeric" placeholder="50" />
+    <div class="grid">
+      <!-- Prévisualisation carte -->
+      <div class="stage">
+        <div id="card" class="card border r-commun show-sep">
+          <div class="frame">
+            <img id="art" class="art" alt="illustration" />
+            <div class="sep"></div>
+            <div class="corner tl"><span id="extOut">EXT</span></div>
+            <div class="corner tr"><span id="hpOut">50</span></div>
+            <div class="panel">
+              <div id="nameOut" class="name">Nom de la créature</div>
+              <div id="atkOut" class="attacks">Capacité / Attaque…</div>
+              <div class="meta">
+                <div class="left"><span id="illusOut">Illustration: —</span></div>
+                <div class="right"><span id="numOut">#000</span></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="row">
-        <label for="attacks">Attaques / texte (zone basse)</label>
-        <textarea id="attacks" placeholder="Décris les attaques, effets, saveur, etc."></textarea>
-      </div>
+      <!-- Formulaire -->
+      <div>
+        <div class="controls">
+          <div>
+            <label>Nom de la créature</label>
+            <input id="name" type="text" placeholder="Richus, Fiakomon…" />
+          </div>
+          <div>
+            <label>Rareté</label>
+            <select id="rarity">
+              <option>Commun</option>
+              <option>Peu Commun</option>
+              <option>Rare</option>
+              <option>Epic</option>
+              <option>Légendaire</option>
+              <option>Exclusif</option>
+            </select>
+          </div>
 
-      <div class="row two">
-        <div>
-          <label for="artist">Illustrateur (bas-gauche)</label>
-          <input id="artist" type="text" placeholder="illus. Nom Prénom" />
+          <div>
+            <label>Extension (coin haut-gauche)</label>
+            <input id="ext" type="text" placeholder="CL01, EV3.5…" />
+          </div>
+          <div>
+            <label>PV (coin haut-droit)</label>
+            <input id="hp" type="number" step="1" min="0" placeholder="50" />
+          </div>
+
+          <div>
+            <label>Illustrateur (bas-gauche)</label>
+            <input id="illus" type="text" placeholder="Minorium" />
+          </div>
+          <div>
+            <label>Numéro de carte (bas-droit)</label>
+            <input id="num" type="text" placeholder="#001" />
+          </div>
+
+          <div style="grid-column:1/-1">
+            <label>Attaque(s) / Texte (au centre de la zone basse)</label>
+            <textarea id="attacks" placeholder="\u221E Si X est dans votre défausse, ajoutez sa Force…\nCOMBO: Piochez 2 cartes."></textarea>
+          </div>
+
+          <div class="row" style="grid-column:1/-1">
+            <div>
+              <label>Illustration (import) </label><br>
+              <input id="file" type="file" accept="image/*" class="btn" />
+            </div>
+            <button id="dl" class="btn" style="margin-left:auto">Télécharger la carte (PNG)</button>
+          </div>
         </div>
-        <div>
-          <label for="number">N° de carte (bas-droit)</label>
-          <input id="number" type="text" placeholder="002/120" />
-        </div>
+        <p class="footer-note">Astuce : modifiez les couleurs dans <code>:root</code> si vous souhaitez coller exactement à votre charte.</p>
       </div>
+    </div>
+  </div>
 
-      <div class="row">
-        <label for="image">Image (illustration)</label>
-        <input id="image" type="file" accept="image/*" />
-      </div>
+  <!-- html2canvas pour export PNG -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script>
+    const qs = s => document.querySelector(s);
 
-      <div class="row two">
-        <button id="download" class="btn">Télécharger la carte (PNG)</button>
-        <button id="clearImage" class="btn secondary">Enlever l’image</button>
-      </div>
-    </section>
+    const PAL = {
+      "Commun":      { cls:"r-commun",      border:true,  sep:true  },
+      "Peu Commun":  { cls:"r-peucommun",   border:true,  sep:true  },
+      "Rare":        { cls:"r-rare",        border:true,  sep:true  },
+      "Epic":        { cls:"r-epic",        border:false, sep:false },
+      "Légendaire":  { cls:"r-legendaire",  border:false, sep:false },
+      "Exclusif":    { cls:"r-exclusif",    border:false, sep:false }
+    };
 
-    <section class="card preview">
-      <canvas id="cardCanvas" width="750" height="1050" aria-label="aperçu de la carte"></canvas>
-    </section>
-  </main>
+    const card = qs('#card');
+    const art  = qs('#art');
 
-  <footer>© Ton générateur TCG — sans type ni coûts d’énergie, comme demandé.</footer>
+    /* Bind champs -> rendu */
+    function sync(){
+      qs('#nameOut').textContent = qs('#name').value || 'Nom de la créature';
+      qs('#extOut').textContent  = qs('#ext').value  || 'EXT';
+      qs('#hpOut').textContent   = qs('#hp').value   || '50';
+      qs('#illusOut').textContent= (qs('#illus').value ? 'Illustration: ' + qs('#illus').value : 'Illustration: —');
+      qs('#numOut').textContent  = qs('#num').value || '#000';
+      qs('#atkOut').textContent  = qs('#attacks').value || 'Capacité / Attaque…';
 
-<script>
-(function(){
-  // Dimensions de la carte (pixels)
-  const W = 750, H = 1050;
-  const R = 42;               // rayon des coins
-  const M = 22;               // marge extérieure
-  const LINE_AT = H * 0.6;    // séparation illustration/zone texte ≈ 3/5 de la hauteur
-  const DIVIDER_Y = H - (H * 0.4); // = même chose (barre "2/5 du bas")
-  const CAN = document.getElementById('cardCanvas');
-  const CTX = CAN.getContext('2d');
-
-  // Couleurs des raretés (teintes du panneau bas + styles de bordure)
-  const RAR = {
-    "Commun":      { panel:"rgba(163,230,53,.35)", border:{color:"#1f2937", width:18}, full:false },
-    "Peu Commun":  { panel:"rgba(245,158,11,.35)", border:{color:"#1f2937", width:18}, full:false },
-    "Rare":        { panel:"rgba(249,115,22,.35)", border:{color:"#000000", width:20}, full:false },
-    "Epic":        { panel:"rgba(239,68,68,.35)",  border:null,                              full:true },
-    "Légendaire":  { panel:"rgba(244,114,182,.35)",border:null,                              full:true },
-    "Exclusif":    { panel:"rgba(16,185,129,.35)", border:null,                              full:true }
-  };
-
-  // Etat
-  const state = { img:null, imgURL:null };
-
-  // Helpers dessin
-  function roundedRectPath(ctx, x, y, w, h, r){
-    ctx.beginPath();
-    ctx.moveTo(x+r, y);
-    ctx.arcTo(x+w, y, x+w, y+h, r);
-    ctx.arcTo(x+w, y+h, x, y+h, r);
-    ctx.arcTo(x, y+h, x, y, r);
-    ctx.arcTo(x, y, x+w, y, r);
-    ctx.closePath();
-  }
-
-  function coverImageDraw(ctx, img, x, y, w, h){
-    if(!img) return;
-    const ir = img.width / img.height;
-    const r  = w / h;
-    let dw, dh, dx, dy;
-    if(ir > r){ // image plus large -> ajuster hauteur
-      dh = h; dw = h * ir;
-      dx = x + (w - dw)/2; dy = y;
-    }else{
-      dw = w; dh = w / ir;
-      dx = x; dy = y + (h - dh)/2;
-    }
-    ctx.drawImage(img, dx, dy, dw, dh);
-  }
-
-  function drawCornerBadge({x,y,side,text,rarity}){
-    const w = 120, h = 64, cut=20, rad=10;
-    CTX.save();
-    CTX.translate(x,y);
-    if(side==='left'){
-      CTX.beginPath();
-      CTX.moveTo(0,rad);
-      CTX.quadraticCurveTo(0,0,rad,0);
-      CTX.lineTo(w-cut,0);
-      CTX.lineTo(w,h);
-      CTX.lineTo(rad,h);
-      CTX.quadraticCurveTo(0,h,0,h-rad);
-      CTX.closePath();
-    }else{
-      // right
-      CTX.beginPath();
-      CTX.moveTo(w-rad,0);
-      CTX.quadraticCurveTo(w,0,w,rad);
-      CTX.lineTo(w,h-rad);
-      CTX.quadraticCurveTo(w,h,w-rad,h);
-      CTX.lineTo(cut, h);
-      CTX.lineTo(0,0);
-      CTX.closePath();
+      // Rareté
+      const r = PAL[qs('#rarity').value];
+      card.className = `card ${r.border ? 'border' : ''} ${r.cls} ${r.sep ? 'show-sep' : 'fullbleed'}`;
     }
 
-    // Fond semi transparent blanc + teinte douce
-    CTX.fillStyle = "rgba(255,255,255,.75)";
-    CTX.fill();
-    // Liseré subtil en fonction de la rareté
-    const panel = RAR[rarity].panel.replace(".35", ".9");
-    CTX.strokeStyle = panel;
-    CTX.lineWidth = 2;
-    CTX.stroke();
+    ['#name','#ext','#hp','#illus','#num','#attacks','#rarity'].forEach(id=>{
+      qs(id).addEventListener('input', sync);
+      qs(id).addEventListener('change', sync);
+    });
 
-    // Texte
-    CTX.fillStyle = "#0b1020";
-    CTX.font = "700 24px system-ui, Segoe UI, Arial";
-    CTX.textAlign = "center";
-    CTX.textBaseline = "middle";
-    CTX.shadowColor = "rgba(0,0,0,.08)";
-    CTX.shadowBlur = 2;
-    const tx = side==='left' ? (w-18)/2 : (w-18)/2;
-    const ty = h/2;
-    CTX.fillText(String(text||""), tx, ty);
-    CTX.restore();
-  }
+    // Import image
+    qs('#file').addEventListener('change', (e)=>{
+      const f = e.target.files && e.target.files[0];
+      if(!f) return;
+      const url = URL.createObjectURL(f);
+      art.src = url;
+    });
 
-  function drawDivider(y){
-    CTX.save();
-    CTX.strokeStyle = "rgba(255,255,255,.55)";
-    CTX.lineWidth = 2.2;
-    CTX.beginPath();
-    CTX.moveTo(M+10, y);
-    CTX.lineTo(W-M-10, y);
-    CTX.stroke();
-    CTX.restore();
-  }
+    // Export PNG haute résolution
+    qs('#dl').addEventListener('click', async ()=>{
+      const node = card; // capture uniquement la carte
+      // petite bordure claire autour pour detacher en PNG
+      node.style.boxShadow = '0 0 0 0 rgba(0,0,0,0)';
+      const canvas = await html2canvas(node, {backgroundColor:null, scale:3, useCORS:true});
+      const link = document.createElement('a');
+      link.download = (qs('#name').value || 'carte') + '.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    });
 
-  function wrapText(str, maxWidth, lineHeight, x, y, font, align="left"){
-    if(!str) return y;
-    CTX.save();
-    CTX.font = font;
-    CTX.fillStyle = "#e5e7eb";
-    CTX.textAlign = align;
-    const words = String(str).split(/\s+/);
-    let line = "";
-    for(let i=0;i<words.length;i++){
-      const test = line ? line + " " + words[i] : words[i];
-      const w = CTX.measureText(test).width;
-      if(w > maxWidth && line){
-        CTX.fillText(line, x, y);
-        line = words[i];
-        y += lineHeight;
-      }else{
-        line = test;
-      }
-    }
-    if(line) CTX.fillText(line, x, y);
-    CTX.restore();
-    return y;
-  }
-
-  function draw(){
-    const name   = document.getElementById('name').value.trim();
-    const set    = document.getElementById('set').value.trim();
-    const hp     = document.getElementById('hp').value.trim();
-    const attacks= document.getElementById('attacks').value.trim();
-    const artist = document.getElementById('artist').value.trim();
-    const number = document.getElementById('number').value.trim();
-    const rarity = document.getElementById('rarity').value;
-
-    // fond
-    CTX.clearRect(0,0,W,H);
-    CTX.fillStyle = "#0b132a";
-    CTX.fillRect(0,0,W,H);
-
-    // zone carte (coins arrondis)
-    roundedRectPath(CTX, M, M, W-2*M, H-2*M, R);
-    CTX.save();
-    CTX.clip();
-
-    // illustration (full ou avec bordure)
-    coverImageDraw(CTX, state.img, M, M, W-2*M, H-2*M);
-
-    // panneau bas semi transparent (commence à 3/5 ~ 2/5 du bas)
-    CTX.fillStyle = RAR[rarity].panel;
-    CTX.fillRect(M, LINE_AT, W-2*M, H - LINE_AT - M);
-
-    // Lignes de séparation (fine barre)
-    drawDivider(DIVIDER_Y);
-
-    // Rétablir clipping des coins
-    CTX.restore();
-
-    // Bordures selon rareté
-    const border = RAR[rarity].border;
-    if(border){
-      CTX.save();
-      roundedRectPath(CTX, M, M, W-2*M, H-2*M, R);
-      CTX.lineWidth = border.width;
-      CTX.strokeStyle = border.color;
-      CTX.stroke();
-      CTX.restore();
-    }
-
-    // Étiquettes coin haut-gauche (extension) & haut-droite (PV sans "PV")
-    drawCornerBadge({x:M+10, y:M+10, side:'left',  text:set, rarity});
-    drawCornerBadge({x:W-M-10-120, y:M+10, side:'right', text:hp,  rarity});
-
-    // Texte - zone inférieure
-    const padX = M+26, padR = W - (M+26);
-    const textTop = LINE_AT + 22;
-
-    // Nom (centré en haut de la partie basse)
-    CTX.save();
-    CTX.font = "800 44px system-ui, Segoe UI, Arial";
-    CTX.fillStyle = "#ffffff";
-    CTX.textAlign = "center";
-    CTX.textBaseline = "alphabetic";
-    CTX.shadowColor = "rgba(0,0,0,.3)";
-    CTX.shadowBlur = 6;
-    CTX.fillText(name || "", W/2, textTop + 40);
-    CTX.restore();
-
-    // Attaques (multi-lignes)
-    const bodyTop = textTop + 64;
-    wrapText(attacks, (W-2*M-56), 30, W/2, bodyTop, "600 22px system-ui, Segoe UI, Arial", "center");
-
-    // Bas-gauche: illustrateur
-    CTX.save();
-    CTX.font = "italic 600 18px system-ui, Segoe UI, Arial";
-    CTX.fillStyle = "rgba(229,231,235,.9)";
-    CTX.textAlign = "left";
-    CTX.fillText(artist ? (artist) : "", padX, H - M - 18);
-    CTX.restore();
-
-    // Bas-droite: numéro de carte
-    CTX.save();
-    CTX.font = "700 18px system-ui, Segoe UI, Arial";
-    CTX.fillStyle = "rgba(229,231,235,.9)";
-    CTX.textAlign = "right";
-    CTX.fillText(number || "", padR, H - M - 18);
-    CTX.restore();
-
-    // Si rareté full-art (Epic/Légendaire/Exclusif) -> supprimer visuellement la bordure
-    if(RAR[rarity].full){
-      // simple liseré d'ombre pour "décoller" la carte
-      CTX.save();
-      roundedRectPath(CTX, M, M, W-2*M, H-2*M, R);
-      CTX.shadowColor = "rgba(0,0,0,.35)";
-      CTX.shadowBlur = 24;
-      CTX.strokeStyle = "rgba(255,255,255,.0)";
-      CTX.stroke();
-      CTX.restore();
-    }
-  }
-
-  // Entrées
-  const inputs = ["rarity","name","set","hp","attacks","artist","number"];
-  inputs.forEach(id => document.getElementById(id).addEventListener('input', draw));
-
-  // Image
-  const fileInput = document.getElementById('image');
-  fileInput.addEventListener('change', e=>{
-    const f = e.target.files[0];
-    if(!f) { state.img=null; draw(); return; }
-    const url = URL.createObjectURL(f);
-    const img = new Image();
-    img.onload = ()=>{ state.img = img; if(state.imgURL) URL.revokeObjectURL(state.imgURL); state.imgURL=url; draw(); };
-    img.src = url;
-  });
-
-  document.getElementById('clearImage').addEventListener('click', ()=>{
-    state.img = null;
-    if(state.imgURL) URL.revokeObjectURL(state.imgURL);
-    state.imgURL = null;
-    fileInput.value = "";
-    draw();
-  });
-
-  // Téléchargement
-  document.getElementById('download').addEventListener('click', ()=>{
-    draw(); // s'assurer que le canvas est à jour
-    const a = document.createElement('a');
-    const name = (document.getElementById('name').value.trim() || "carte").replace(/\s+/g,'_');
-    a.download = name + ".png";
-    a.href = CAN.toDataURL("image/png");
-    a.click();
-  });
-
-  // Première peinture
-  draw();
-})();
-</script>
+    // Valeurs par défaut
+    art.src = '';
+    sync();
+  </script>
 </body>
 </html>

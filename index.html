@@ -1,289 +1,382 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Card Generator</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Générateur de cartes TCG</title>
 <style>
   :root{
-    --bg1:#0e1020; --bg2:#0a0c16;
-    --panel:#171a30; --line:#111631; --txt:#0f1430; --white:#ffffff;
-    --ui:#eef1ff; --muted:#aab3d1;
+    --bg:#0b1020;
+    --panel:#111827;
+    --ink:#e5e7eb;
+    --muted:#9ca3af;
+    --accent:#6366f1;
   }
   *{box-sizing:border-box}
-  html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:var(--ui);
-           font-family:system-ui,Segoe UI,Arial,Verdana,sans-serif}
-  .wrap{display:grid;grid-template-columns:360px 1fr;gap:20px;max-width:1200px;margin:24px auto;padding:0 16px}
-  .card{background:var(--panel);border:1px solid #23274b;border-radius:14px;padding:16px}
-  h1{font-size:20px;margin:0 0 8px}
-  .muted{color:var(--muted);font-size:12px;margin:0 0 14px}
-  label{font-weight:700;font-size:12px;display:block;margin:10px 0 6px}
-  input[type=text],input[type=number],select,textarea{
-    width:100%;padding:10px;border-radius:10px;border:1px solid #2b2f57;background:#0f1230;color:#fff;
+  body{
+    margin:0; background:radial-gradient(1200px 600px at 20% 0%, #151b35, #0b1020);
+    color:var(--ink); font:16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+    display:flex; flex-direction:column; min-height:100vh;
   }
-  textarea{min-height:110px;resize:vertical}
-  input[type=file]{width:100%}
-  .row{display:flex;gap:10px}
-  .row>*{flex:1}
+  header{padding:18px 20px 6px; display:flex; align-items:center; gap:10px}
+  header h1{margin:0; font-size:18px; font-weight:700; letter-spacing:.3px}
+  .app{display:grid; grid-template-columns: 360px 1fr; gap:18px; padding:14px 20px 28px; width:100%; max-width:1400px; margin:0 auto; flex:1}
+  .card{background:#0f162f; border:1px solid #1f2a4d; border-radius:16px; padding:14px; box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  .controls{display:grid; gap:10px}
+  .row{display:grid; gap:8px}
+  .row.two{grid-template-columns:1fr 1fr; gap:10px}
+  label{font-size:12px; color:var(--muted); letter-spacing:.3px}
+  input[type="text"], input[type="number"], select, textarea{
+    width:100%; border:1px solid #243055; background:#0b132a; color:var(--ink);
+    border-radius:10px; padding:10px 12px; outline:none; transition:border .15s;
+  }
+  textarea{min-height:110px; resize:vertical}
+  input[type="file"]{border:1px dashed #2a396d; padding:10px; border-radius:10px; background:#0b132a}
+  input:focus, select:focus, textarea:focus{border-color:#3b82f6}
   .btn{
-    appearance:none;border:0;border-radius:12px;padding:12px 14px;background:linear-gradient(135deg,#4cc9f0,#4361ee);
-    color:#fff;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(67,97,238,.35)
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    background:#1f39a4; border:1px solid #2b46b1; color:white; padding:10px 14px; border-radius:12px;
+    cursor:pointer; font-weight:700; letter-spacing:.3px; text-decoration:none; user-select:none;
   }
+  .btn.secondary{background:#0b132a; border-color:#2a396d; color:#d1d5db}
   .btn:active{transform:translateY(1px)}
-  canvas{width:min(520px,90vw);height:auto;background:#e8eaf7;border-radius:18px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
-  .preview{display:grid;place-items:center}
-  footer{max-width:1200px;margin:18px auto 32px;color:#97a0c8;font-size:12px;padding:0 16px}
+  canvas{width:100%; height:auto; display:block; background:#0b132a; border-radius:16px}
+  .preview.card{padding:0}
+  .help{font-size:12px; color:#a5b4fc}
+  footer{padding:10px 20px 20px; color:#94a3b8; font-size:12px; text-align:center}
 </style>
 </head>
 <body>
-  <div class="wrap">
-    <section class="card">
-      <h1>Générateur de carte</h1>
-      <p class="muted">Remplis les champs, l’aperçu se met à jour en direct. Clique ensuite sur <b>Télécharger</b>.</p>
+  <header>
+    <h1>Générateur de cartes TCG</h1>
+    <span class="help">— importe une image, remplis les champs, choisis la rareté, puis télécharge.</span>
+  </header>
 
-      <label for="name">Nom de la créature</label>
-      <input id="name" type="text" placeholder="Ex : Noah Mario" value="Noah Mario" />
-
+  <main class="app">
+    <section class="card controls">
       <div class="row">
-        <div>
-          <label for="hp">PV</label>
-          <input id="hp" type="number" min="0" max="999" step="1" value="60" />
-        </div>
-        <div>
-          <label for="rarity">Rareté</label>
-          <select id="rarity">
-            <option value="commun" selected>Commun</option>
-            <option value="peu">Peu Commun</option>
-            <option value="rare">Rare</option>
-            <option value="epic">Épique (full-art)</option>
-            <option value="legendaire">Légendaire (full-art)</option>
-            <option value="exclu">Exclusif (full-art)</option>
-          </select>
-        </div>
+        <label for="rarity">Rareté</label>
+        <select id="rarity">
+          <option>Commun</option>
+          <option>Peu Commun</option>
+          <option>Rare</option>
+          <option>Epic</option>
+          <option>Légendaire</option>
+          <option>Exclusif</option>
+        </select>
       </div>
 
       <div class="row">
+        <label for="name">Nom de la créature</label>
+        <input id="name" type="text" placeholder="Ex. Astroslip" />
+      </div>
+
+      <div class="row two">
         <div>
           <label for="set">Extension (coin haut-gauche)</label>
-          <input id="set" type="text" placeholder="ex : GEN1" value="GEN1" />
+          <input id="set" type="text" placeholder="Ex. CL01" />
         </div>
         <div>
-          <label for="number">Numéro (bas-droite)</label>
-          <input id="number" type="text" placeholder="ex : 002/120" value="002/120" />
+          <label for="hp">PV (numéro seul)</label>
+          <input id="hp" type="number" inputmode="numeric" placeholder="50" />
         </div>
       </div>
-
-      <label for="desc">Texte / attaques</label>
-      <textarea id="desc" placeholder="Décris les capacités, attaques, effets…">Casquette
-— Ajoute +2 si tu portes une casquette.</textarea>
 
       <div class="row">
+        <label for="attacks">Attaques / texte (zone basse)</label>
+        <textarea id="attacks" placeholder="Décris les attaques, effets, saveur, etc."></textarea>
+      </div>
+
+      <div class="row two">
         <div>
           <label for="artist">Illustrateur (bas-gauche)</label>
-          <input id="artist" type="text" placeholder="ex : Thernriel" value="Thernriel" />
+          <input id="artist" type="text" placeholder="illus. Nom Prénom" />
         </div>
         <div>
-          <label for="tone">Couleur panneau bas (si besoin)</label>
-          <input id="tone" type="color" value="#8bd62a" />
+          <label for="number">N° de carte (bas-droit)</label>
+          <input id="number" type="text" placeholder="002/120" />
         </div>
       </div>
 
-      <label for="illus">Illustration (PNG/JPG)</label>
-      <input id="illus" type="file" accept="image/*" />
+      <div class="row">
+        <label for="image">Image (illustration)</label>
+        <input id="image" type="file" accept="image/*" />
+      </div>
 
-      <div style="display:flex;gap:10px;margin-top:14px">
-        <button id="downloadBtn" class="btn">📥 Télécharger en PNG</button>
-        <button id="clearImg" class="btn" style="background:linear-gradient(135deg,#ee6055,#ff9b85)">🗑️ Retirer l’illustration</button>
+      <div class="row two">
+        <button id="download" class="btn">Télécharger la carte (PNG)</button>
+        <button id="clearImage" class="btn secondary">Enlever l’image</button>
       </div>
     </section>
 
-    <section class="preview">
-      <canvas id="card" width="900" height="1250" aria-label="Aperçu carte"></canvas>
+    <section class="card preview">
+      <canvas id="cardCanvas" width="750" height="1050" aria-label="aperçu de la carte"></canvas>
     </section>
-  </div>
+  </main>
 
-  <footer>Prototype canvas côté client. Aucune donnée envoyée sur un serveur.</footer>
+  <footer>© Ton générateur TCG — sans type ni coûts d’énergie, comme demandé.</footer>
 
 <script>
-(() => {
-  // -------- DOM
-  const $ = id => document.getElementById(id);
-  const cvs = $('card'), ctx = cvs.getContext('2d');
-  const f = {
-    name: $('name'), hp: $('hp'), rarity: $('rarity'),
-    set: $('set'), number: $('number'), desc: $('desc'),
-    artist: $('artist'), tone: $('tone'),
-    illus: $('illus'), dl: $('downloadBtn'), clear: $('clearImg')
+(function(){
+  // Dimensions de la carte (pixels)
+  const W = 750, H = 1050;
+  const R = 42;               // rayon des coins
+  const M = 22;               // marge extérieure
+  const LINE_AT = H * 0.6;    // séparation illustration/zone texte ≈ 3/5 de la hauteur
+  const DIVIDER_Y = H - (H * 0.4); // = même chose (barre "2/5 du bas")
+  const CAN = document.getElementById('cardCanvas');
+  const CTX = CAN.getContext('2d');
+
+  // Couleurs des raretés (teintes du panneau bas + styles de bordure)
+  const RAR = {
+    "Commun":      { panel:"rgba(163,230,53,.35)", border:{color:"#1f2937", width:18}, full:false },
+    "Peu Commun":  { panel:"rgba(245,158,11,.35)", border:{color:"#1f2937", width:18}, full:false },
+    "Rare":        { panel:"rgba(249,115,22,.35)", border:{color:"#000000", width:20}, full:false },
+    "Epic":        { panel:"rgba(239,68,68,.35)",  border:null,                              full:true },
+    "Légendaire":  { panel:"rgba(244,114,182,.35)",border:null,                              full:true },
+    "Exclusif":    { panel:"rgba(16,185,129,.35)", border:null,                              full:true }
   };
 
-  // -------- Rarity palette & rules
-  // Colors picked to roughly match your chips (you can nudge them).
-  const RARITY = {
-    commun     : {frame:'#343946', band:'#8bd62a', full:false},
-    peu        : {frame:'#343946', band:'#ffc447', full:false},
-    rare       : {frame:'#000000', band:'#ff6a3d', full:false},
-    epic       : {full:true, band:'#ff3b30'},
-    legendaire : {full:true, band:'#ff73a9'},
-    exclu      : {full:true, band:'#00d19a'}
-  };
+  // Etat
+  const state = { img:null, imgURL:null };
 
-  // -------- Illustration
-  let illusImg = null;
-
-  // -------- Draw helpers
-  function rr(x,y,w,h,r, fill, color){
-  ctx.beginPath();
-  ctx.moveTo(x+r,y);
-  ctx.arcTo(x+w,y,x+w,y+h,r);
-  ctx.arcTo(x+w,y+h,x,y+h,r);
-  ctx.arcTo(x,y+h,x,y,r);
-  ctx.arcTo(x,y,x+w,y,r);
-  ctx.closePath();
-  if (fill) { 
-    ctx.fillStyle = color; 
-    ctx.fill(); 
-  } else {
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
-    ctx.stroke();
-  }
-}
-  function text(x,y,str,size,color,align='left',base='alphabetic'){
-    ctx.fillStyle=color; ctx.font=`${size}px system-ui,Segoe UI,Arial`; ctx.textAlign=align; ctx.textBaseline=base;
-    ctx.fillText(str,x,y);
-  }
-  function drawImageCover(img, x,y,w,h){
-    const r=Math.max(w/img.width,h/img.height);
-    const nw=img.width*r, nh=img.height*r, nx=x+(w-nw)/2, ny=y+(h-nh)/2;
-    ctx.drawImage(img,nx,ny,nw,nh);
-  }
-  function wrapText(str,x,y,maxW,lh,color='#111',align='left'){
-    ctx.fillStyle=color; ctx.textAlign=align; ctx.textBaseline='alphabetic';
-    const words=str.replace(/\r/g,'').split('\n');
-    let yy=y;
-    for(const block of words){
-      const parts=block.split(' ');
-      let line='';
-      for(const w of parts){
-        const test=line? line+' '+w : w;
-        if(ctx.measureText(test).width>maxW){
-          ctx.fillText(line,x,yy); yy+=lh; line=w;
-        }else line=test;
-      }
-      ctx.fillText(line,x,yy); yy+=lh;
-    }
-  }
-  // quarter-octagon corner tag (tl or tr)
-  function cornerTag(corner, label){
-    const W=cvs.width, H=cvs.height, m=46, w=116, h=64, cut=18;
-    ctx.save();
-    ctx.fillStyle='rgba(255,255,255,.95)'; ctx.strokeStyle='#111631'; ctx.lineWidth=2;
+  // Helpers dessin
+  function roundedRectPath(ctx, x, y, w, h, r){
     ctx.beginPath();
-    if(corner==='tl'){
-      ctx.moveTo(m,h+m-cut); ctx.lineTo(m,m+cut);
-      ctx.lineTo(m+cut,m); ctx.lineTo(m+w-cut,m); ctx.lineTo(m+w,m+cut);
-      ctx.lineTo(m+w,m+h-cut); ctx.lineTo(m+w-cut,m+h);
-      ctx.lineTo(m+cut,m+h); ctx.closePath();
-    }else{ // tr
-      const x=W-m-w;
-      ctx.moveTo(x,m+cut); ctx.lineTo(x+cut,m);
-      ctx.lineTo(x+w-cut,m); ctx.lineTo(x+w,m+cut);
-      ctx.lineTo(x+w,m+h-cut); ctx.lineTo(x+w-cut,m+h);
-      ctx.lineTo(x+cut,m+h); ctx.lineTo(x,m+h-cut); ctx.closePath();
-    }
-    ctx.fill(); ctx.stroke();
-    const tx = corner==='tl' ? (m+w/2) : (W-m-w/2);
-    text(tx, m+h/2, label, 24, '#111631','center','middle');
-    ctx.restore();
+    ctx.moveTo(x+r, y);
+    ctx.arcTo(x+w, y, x+w, y+h, r);
+    ctx.arcTo(x+w, y+h, x, y+h, r);
+    ctx.arcTo(x, y+h, x, y, r);
+    ctx.arcTo(x, y, x+w, y, r);
+    ctx.closePath();
   }
 
-  // -------- Main draw
-  function draw(){
-    const W=cvs.width, H=cvs.height, m=28;
-    const rar = RARITY[f.rarity.value];
-    const band = f.tone.value || rar.band;
-    const full = !!rar.full;
-
-    // background
-    const g=ctx.createLinearGradient(0,0,0,H);
-    g.addColorStop(0,'#f7f8ff'); g.addColorStop(1,'#ebeeff');
-    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
-
-   if (full){
-  if(illusImg) drawImageCover(illusImg, m, m, W-2*m, H-2*m);
-  const ph = Math.floor(H*0.34);
-  ctx.fillStyle = hexToRGBA(band, 0.78);
-  rr(m+20, H-ph-20, W-2*(m+20), ph, 18, true, ctx.fillStyle);
-  text(W/2, H-ph-20+36, (f.name.value||'Sans nom'), 44, '#ffffff','center','alphabetic');
-  ctx.font='18px system-ui,Segoe UI,Arial';
-  wrapText(f.desc.value, m+40, H-ph-20+72, W-2*(m+40), 28, '#ffffff','left');
-}
-
+  function coverImageDraw(ctx, img, x, y, w, h){
+    if(!img) return;
+    const ir = img.width / img.height;
+    const r  = w / h;
+    let dw, dh, dx, dy;
+    if(ir > r){ // image plus large -> ajuster hauteur
+      dh = h; dw = h * ir;
+      dx = x + (w - dw)/2; dy = y;
     }else{
-      // CADRE : bord + grande zone illustration en haut, bandeau coloré en bas
-      // cadre extérieur anthracite
-      rr(m,m,W-2*m,H-2*m,26,true,'#111631');
-      // cadre intérieur selon rareté
-      rr(m+8,m+8,W-2*(m+8),H-2*(m+8),22,true, rar.frame);
-      // fenêtres
-      const topH = Math.floor((H-2*(m+16))*0.60);  // ~3/5 en haut
-      // illustration
-      rr(m+16,m+16,W-2*(m+16),topH,16,true,'#ffffff');
-      if(illusImg) drawImageCover(illusImg, m+16, m+16, W-2*(m+16), topH);
-      // séparation fine au 2/5 du bas (donc limite zone texte)
-      ctx.fillStyle = rar.frame; ctx.fillRect(m+12, m+16+topH+6, W-2*(m+12), 4);
+      dw = w; dh = w / ir;
+      dx = x; dy = y + (h - dh)/2;
+    }
+    ctx.drawImage(img, dx, dy, dw, dh);
+  }
 
-      // zone bas teintée par la couleur de la rareté (légère)
-      const bottomY = m+16+topH+16;
-      const bottomH = H - bottomY - (m+16);
-      ctx.fillStyle = hexToRGBA(band, 0.15);
-      rr(m+16, bottomY, W-2*(m+16), bottomH, 16, true, ctx.fillStyle);
-      rr(m+22, bottomY+6, W-2*(m+22), bottomH-12, 12, true, '#ffffff');
-
-      // nom centré en haut de la partie basse
-      text(W/2, bottomY+36, (f.name.value||'Sans nom'), 42, '#111631','center','alphabetic');
-      ctx.font='18px system-ui,Segoe UI,Arial';
-      wrapText(f.desc.value, m+32, bottomY+72, W-2*(m+32), 28, '#111631','left');
+  function drawCornerBadge({x,y,side,text,rarity}){
+    const w = 120, h = 64, cut=20, rad=10;
+    CTX.save();
+    CTX.translate(x,y);
+    if(side==='left'){
+      CTX.beginPath();
+      CTX.moveTo(0,rad);
+      CTX.quadraticCurveTo(0,0,rad,0);
+      CTX.lineTo(w-cut,0);
+      CTX.lineTo(w,h);
+      CTX.lineTo(rad,h);
+      CTX.quadraticCurveTo(0,h,0,h-rad);
+      CTX.closePath();
+    }else{
+      // right
+      CTX.beginPath();
+      CTX.moveTo(w-rad,0);
+      CTX.quadraticCurveTo(w,0,w,rad);
+      CTX.lineTo(w,h-rad);
+      CTX.quadraticCurveTo(w,h,w-rad,h);
+      CTX.lineTo(cut, h);
+      CTX.lineTo(0,0);
+      CTX.closePath();
     }
 
-    // coins : extension (gauche) & PV (droite)
-    cornerTag('tl', (f.set.value||''));
-    cornerTag('tr', (String(f.hp.value||'') ));
+    // Fond semi transparent blanc + teinte douce
+    CTX.fillStyle = "rgba(255,255,255,.75)";
+    CTX.fill();
+    // Liseré subtil en fonction de la rareté
+    const panel = RAR[rarity].panel.replace(".35", ".9");
+    CTX.strokeStyle = panel;
+    CTX.lineWidth = 2;
+    CTX.stroke();
 
-    // crédits bas
-    text(m+24, H-m-18, 'Art : ' + (f.artist.value||'-'), 16, '#111631','left','alphabetic');
-    text(W-m-24, H-m-18, (f.number.value||''), 16, '#111631','right','alphabetic');
+    // Texte
+    CTX.fillStyle = "#0b1020";
+    CTX.font = "700 24px system-ui, Segoe UI, Arial";
+    CTX.textAlign = "center";
+    CTX.textBaseline = "middle";
+    CTX.shadowColor = "rgba(0,0,0,.08)";
+    CTX.shadowBlur = 2;
+    const tx = side==='left' ? (w-18)/2 : (w-18)/2;
+    const ty = h/2;
+    CTX.fillText(String(text||""), tx, ty);
+    CTX.restore();
   }
 
-  // -------- small utils
-  function hexToRGBA(hex, a=1){
-    const h=hex.replace('#','');
-    const n=parseInt(h.length===3 ? h.split('').map(c=>c+c).join('') : h,16);
-    const r=(n>>16)&255, g=(n>>8)&255, b=n&255;
-    return `rgba(${r},${g},${b},${a})`;
+  function drawDivider(y){
+    CTX.save();
+    CTX.strokeStyle = "rgba(255,255,255,.55)";
+    CTX.lineWidth = 2.2;
+    CTX.beginPath();
+    CTX.moveTo(M+10, y);
+    CTX.lineTo(W-M-10, y);
+    CTX.stroke();
+    CTX.restore();
   }
 
-  // -------- events
-  ['name','hp','rarity','set','number','desc','artist','tone'].forEach(id=>{
-    $(id).addEventListener('input', draw);
+  function wrapText(str, maxWidth, lineHeight, x, y, font, align="left"){
+    if(!str) return y;
+    CTX.save();
+    CTX.font = font;
+    CTX.fillStyle = "#e5e7eb";
+    CTX.textAlign = align;
+    const words = String(str).split(/\s+/);
+    let line = "";
+    for(let i=0;i<words.length;i++){
+      const test = line ? line + " " + words[i] : words[i];
+      const w = CTX.measureText(test).width;
+      if(w > maxWidth && line){
+        CTX.fillText(line, x, y);
+        line = words[i];
+        y += lineHeight;
+      }else{
+        line = test;
+      }
+    }
+    if(line) CTX.fillText(line, x, y);
+    CTX.restore();
+    return y;
+  }
+
+  function draw(){
+    const name   = document.getElementById('name').value.trim();
+    const set    = document.getElementById('set').value.trim();
+    const hp     = document.getElementById('hp').value.trim();
+    const attacks= document.getElementById('attacks').value.trim();
+    const artist = document.getElementById('artist').value.trim();
+    const number = document.getElementById('number').value.trim();
+    const rarity = document.getElementById('rarity').value;
+
+    // fond
+    CTX.clearRect(0,0,W,H);
+    CTX.fillStyle = "#0b132a";
+    CTX.fillRect(0,0,W,H);
+
+    // zone carte (coins arrondis)
+    roundedRectPath(CTX, M, M, W-2*M, H-2*M, R);
+    CTX.save();
+    CTX.clip();
+
+    // illustration (full ou avec bordure)
+    coverImageDraw(CTX, state.img, M, M, W-2*M, H-2*M);
+
+    // panneau bas semi transparent (commence à 3/5 ~ 2/5 du bas)
+    CTX.fillStyle = RAR[rarity].panel;
+    CTX.fillRect(M, LINE_AT, W-2*M, H - LINE_AT - M);
+
+    // Lignes de séparation (fine barre)
+    drawDivider(DIVIDER_Y);
+
+    // Rétablir clipping des coins
+    CTX.restore();
+
+    // Bordures selon rareté
+    const border = RAR[rarity].border;
+    if(border){
+      CTX.save();
+      roundedRectPath(CTX, M, M, W-2*M, H-2*M, R);
+      CTX.lineWidth = border.width;
+      CTX.strokeStyle = border.color;
+      CTX.stroke();
+      CTX.restore();
+    }
+
+    // Étiquettes coin haut-gauche (extension) & haut-droite (PV sans "PV")
+    drawCornerBadge({x:M+10, y:M+10, side:'left',  text:set, rarity});
+    drawCornerBadge({x:W-M-10-120, y:M+10, side:'right', text:hp,  rarity});
+
+    // Texte - zone inférieure
+    const padX = M+26, padR = W - (M+26);
+    const textTop = LINE_AT + 22;
+
+    // Nom (centré en haut de la partie basse)
+    CTX.save();
+    CTX.font = "800 44px system-ui, Segoe UI, Arial";
+    CTX.fillStyle = "#ffffff";
+    CTX.textAlign = "center";
+    CTX.textBaseline = "alphabetic";
+    CTX.shadowColor = "rgba(0,0,0,.3)";
+    CTX.shadowBlur = 6;
+    CTX.fillText(name || "", W/2, textTop + 40);
+    CTX.restore();
+
+    // Attaques (multi-lignes)
+    const bodyTop = textTop + 64;
+    wrapText(attacks, (W-2*M-56), 30, W/2, bodyTop, "600 22px system-ui, Segoe UI, Arial", "center");
+
+    // Bas-gauche: illustrateur
+    CTX.save();
+    CTX.font = "italic 600 18px system-ui, Segoe UI, Arial";
+    CTX.fillStyle = "rgba(229,231,235,.9)";
+    CTX.textAlign = "left";
+    CTX.fillText(artist ? (artist) : "", padX, H - M - 18);
+    CTX.restore();
+
+    // Bas-droite: numéro de carte
+    CTX.save();
+    CTX.font = "700 18px system-ui, Segoe UI, Arial";
+    CTX.fillStyle = "rgba(229,231,235,.9)";
+    CTX.textAlign = "right";
+    CTX.fillText(number || "", padR, H - M - 18);
+    CTX.restore();
+
+    // Si rareté full-art (Epic/Légendaire/Exclusif) -> supprimer visuellement la bordure
+    if(RAR[rarity].full){
+      // simple liseré d'ombre pour "décoller" la carte
+      CTX.save();
+      roundedRectPath(CTX, M, M, W-2*M, H-2*M, R);
+      CTX.shadowColor = "rgba(0,0,0,.35)";
+      CTX.shadowBlur = 24;
+      CTX.strokeStyle = "rgba(255,255,255,.0)";
+      CTX.stroke();
+      CTX.restore();
+    }
+  }
+
+  // Entrées
+  const inputs = ["rarity","name","set","hp","attacks","artist","number"];
+  inputs.forEach(id => document.getElementById(id).addEventListener('input', draw));
+
+  // Image
+  const fileInput = document.getElementById('image');
+  fileInput.addEventListener('change', e=>{
+    const f = e.target.files[0];
+    if(!f) { state.img=null; draw(); return; }
+    const url = URL.createObjectURL(f);
+    const img = new Image();
+    img.onload = ()=>{ state.img = img; if(state.imgURL) URL.revokeObjectURL(state.imgURL); state.imgURL=url; draw(); };
+    img.src = url;
   });
 
-  f.illus.addEventListener('change', async (e)=>{
-    const file = e.target.files?.[0];
-    if(!file){ illusImg=null; draw(); return; }
-    const dataUrl = await new Promise((res,rej)=>{const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file);});
-    illusImg = await new Promise((res,rej)=>{const im=new Image(); im.onload=()=>res(im); im.onerror=rej; im.src=dataUrl;});
+  document.getElementById('clearImage').addEventListener('click', ()=>{
+    state.img = null;
+    if(state.imgURL) URL.revokeObjectURL(state.imgURL);
+    state.imgURL = null;
+    fileInput.value = "";
     draw();
   });
-  f.clear.addEventListener('click', ()=>{ f.illus.value=''; illusImg=null; draw(); });
-  f.dl.addEventListener('click', ()=>{
-    const a=document.createElement('a');
-    a.download = `${(f.name.value||'carte')}.png`;
-    a.href = cvs.toDataURL('image/png');
+
+  // Téléchargement
+  document.getElementById('download').addEventListener('click', ()=>{
+    draw(); // s'assurer que le canvas est à jour
+    const a = document.createElement('a');
+    const name = (document.getElementById('name').value.trim() || "carte").replace(/\s+/g,'_');
+    a.download = name + ".png";
+    a.href = CAN.toDataURL("image/png");
     a.click();
   });
 
-  // first render
+  // Première peinture
   draw();
 })();
 </script>

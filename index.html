@@ -3,23 +3,26 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Fiakomon Card Generator</title>
+<title>Card Generator</title>
 <style>
   :root{
-    --bg:#0f1221; --panel:#171a30; --muted:#aab3d1; --txt:#eef1ff; --accent:#6cf;
+    --bg1:#0e1020; --bg2:#0a0c16;
+    --panel:#171a30; --line:#111631; --txt:#0f1430; --white:#ffffff;
+    --ui:#eef1ff; --muted:#aab3d1;
   }
   *{box-sizing:border-box}
-  html,body{height:100%;margin:0;background:linear-gradient(180deg,#0e1020,#0a0c16);}
-  body{color:var(--txt);font-family:system-ui,Segoe UI,Arial,Verdana,sans-serif}
+  html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:var(--ui);
+           font-family:system-ui,Segoe UI,Arial,Verdana,sans-serif}
   .wrap{display:grid;grid-template-columns:360px 1fr;gap:20px;max-width:1200px;margin:24px auto;padding:0 16px}
   .card{background:var(--panel);border:1px solid #23274b;border-radius:14px;padding:16px}
   h1{font-size:20px;margin:0 0 8px}
-  .muted{color:var(--muted);font-size:12px;margin:0 0 16px}
-  label{font-weight:700;font-size:12px;display:block;margin:12px 0 6px}
-  input[type=text],input[type=number],select{
-    width:100%;padding:10px;border-radius:10px;border:1px solid #2b2f57;background:#0f1230;color:var(--txt);
+  .muted{color:var(--muted);font-size:12px;margin:0 0 14px}
+  label{font-weight:700;font-size:12px;display:block;margin:10px 0 6px}
+  input[type=text],input[type=number],select,textarea{
+    width:100%;padding:10px;border-radius:10px;border:1px solid #2b2f57;background:#0f1230;color:#fff;
   }
-  input[type=color]{width:64px;height:36px;padding:0;border:0;background:#0f1230;border-radius:8px}
+  textarea{min-height:110px;resize:vertical}
+  input[type=file]{width:100%}
   .row{display:flex;gap:10px}
   .row>*{flex:1}
   .btn{
@@ -35,53 +38,53 @@
 <body>
   <div class="wrap">
     <section class="card">
-      <h1>Fiakomon – Générateur de carte</h1>
+      <h1>Générateur de carte</h1>
       <p class="muted">Remplis les champs, l’aperçu se met à jour en direct. Clique ensuite sur <b>Télécharger</b>.</p>
 
-      <label for="name">Nom</label>
+      <label for="name">Nom de la créature</label>
       <input id="name" type="text" placeholder="Ex : Noah Mario" value="Noah Mario" />
 
       <div class="row">
         <div>
           <label for="hp">PV</label>
-          <input id="hp" type="number" min="10" max="400" step="10" value="120" />
+          <input id="hp" type="number" min="0" max="999" step="1" value="60" />
         </div>
         <div>
           <label for="rarity">Rareté</label>
           <select id="rarity">
-            <option value="★">★ Classique</option>
-            <option value="★★">★★ Rare</option>
-            <option value="EX" selected>EX</option>
-            <option value="Ω">Ω Légende</option>
+            <option value="commun" selected>Commun</option>
+            <option value="peu">Peu Commun</option>
+            <option value="rare">Rare</option>
+            <option value="epic">Épique (full-art)</option>
+            <option value="legendaire">Légendaire (full-art)</option>
+            <option value="exclu">Exclusif (full-art)</option>
           </select>
         </div>
       </div>
 
       <div class="row">
         <div>
-          <label for="type">Type</label>
-          <select id="type">
-            <option>Feu</option><option>Eau</option><option>Plante</option>
-            <option selected>Fée</option><option>Ténèbres</option><option>Électrik</option>
-          </select>
+          <label for="set">Extension (coin haut-gauche)</label>
+          <input id="set" type="text" placeholder="ex : GEN1" value="GEN1" />
         </div>
         <div>
-          <label for="frameColor">Couleur du cadre</label>
-          <input id="frameColor" type="color" value="#ff5aa5" />
+          <label for="number">Numéro (bas-droite)</label>
+          <input id="number" type="text" placeholder="ex : 002/120" value="002/120" />
         </div>
       </div>
 
-      <label for="attack">Attaque</label>
-      <input id="attack" type="text" placeholder="Nom de l’attaque" value="Casquette" />
+      <label for="desc">Texte / attaques</label>
+      <textarea id="desc" placeholder="Décris les capacités, attaques, effets…">Casquette
+— Ajoute +2 si tu portes une casquette.</textarea>
 
       <div class="row">
         <div>
-          <label for="damage">Dégâts</label>
-          <input id="damage" type="number" min="0" max="500" step="10" value="120" />
+          <label for="artist">Illustrateur (bas-gauche)</label>
+          <input id="artist" type="text" placeholder="ex : Thernriel" value="Thernriel" />
         </div>
         <div>
-          <label for="cost">Coût (⚡)</label>
-          <input id="cost" type="number" min="0" max="4" value="2" />
+          <label for="tone">Couleur panneau bas (si besoin)</label>
+          <input id="tone" type="color" value="#8bd62a" />
         </div>
       </div>
 
@@ -99,107 +102,36 @@
     </section>
   </div>
 
-  <footer>✨ Prototype minimal – 100% côté client (HTML/CSS/Canvas). Tu pourras ensuite personnaliser le design “Fiakomon”.</footer>
+  <footer>Prototype canvas côté client. Aucune donnée envoyée sur un serveur.</footer>
 
 <script>
 (() => {
-  const dom = (id)=>document.getElementById(id);
-  const cvs = dom('card');
-  const ctx = cvs.getContext('2d');
+  // -------- DOM
+  const $ = id => document.getElementById(id);
+  const cvs = $('card'), ctx = cvs.getContext('2d');
+  const f = {
+    name: $('name'), hp: $('hp'), rarity: $('rarity'),
+    set: $('set'), number: $('number'), desc: $('desc'),
+    artist: $('artist'), tone: $('tone'),
+    illus: $('illus'), dl: $('downloadBtn'), clear: $('clearImg')
+  };
 
-  // Champs
-  const $name=dom('name'), $hp=dom('hp'), $rar=dom('rarity'),
-        $type=dom('type'), $frame=dom('frameColor'),
-        $atk=dom('attack'), $dmg=dom('damage'), $cost=dom('cost'),
-        $illus=dom('illus'), $dl=dom('downloadBtn'), $clear=dom('clearImg');
+  // -------- Rarity palette & rules
+  // Colors picked to roughly match your chips (you can nudge them).
+  const RARITY = {
+    commun     : {frame:'#343946', band:'#8bd62a', full:false},
+    peu        : {frame:'#343946', band:'#ffc447', full:false},
+    rare       : {frame:'#000000', band:'#ff6a3d', full:false},
+    epic       : {full:true, band:'#ff3b30'},
+    legendaire : {full:true, band:'#ff73a9'},
+    exclu      : {full:true, band:'#00d19a'}
+  };
 
-  // Illustration chargée (Image bitmap)
+  // -------- Illustration
   let illusImg = null;
 
-  // Dessin de la carte
-  function draw(){
-    const W=cvs.width, H=cvs.height;
-
-    // Fond dégradé + pattern léger
-    const g=ctx.createLinearGradient(0,0,0,H);
-    g.addColorStop(0,'#f7f8ff'); g.addColorStop(1,'#ebeeff');
-    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
-
-    // Cadre extérieur
-    const frameColor=$frame.value;
-    roundRect(20,20,W-40,H-40,28, '#111631', true);
-    roundRect(28,28,W-56,H-56,24, frameColor, true);
-
-    // Bandeau titre
-    roundRect(56,64,W-112,86,18,'#111631',true);
-    roundRect(60,68,W-120,78,14,'#ffffff',true);
-
-    ctx.fillStyle='#111631';
-    ctx.font='bold 48px system-ui,Segoe UI,Arial';
-    ctx.textBaseline='middle';
-    ctx.fillText(($name.value||'Fiakomon').slice(0,24), 84, 108);
-
-    // PV
-    ctx.textAlign='right';
-    ctx.font='bold 44px system-ui,Segoe UI,Arial';
-    ctx.fillStyle='#e53935';
-    ctx.fillText($hp.value+' PV', W-84, 108);
-    ctx.textAlign='left';
-
-    // Etiquettes type + rareté
-    pill(84,150,120,36, '#111631'); text(144,168,$type.value, 18, '#fff', 'center');
-    pill(W-240,150,140,36, '#111631'); text(W-170,168,$rar.value, 18, '#fff','center');
-
-    // Fenêtre illustration
-    roundRect(64,210,W-128,520,18,'#111631',true);
-    roundRect(70,216,W-140,508,14,'#ffffff',true);
-
-    if(illusImg){
-      const pad=18;
-      const box={x:70+pad,y:216+pad,w:W-140-pad*2,h:508-pad*2};
-      // cover
-      const r = Math.max(box.w/illusImg.width, box.h/illusImg.height);
-      const w = illusImg.width*r, h = illusImg.height*r;
-      const x = box.x + (box.w-w)/2, y = box.y + (box.h-h)/2;
-      ctx.drawImage(illusImg,x,y,w,h);
-    }else{
-      ctx.fillStyle='#c9cfea'; ctx.textAlign='center';
-      text(W/2, 470, 'Aucune illustration', 20, '#657', 'center');
-      ctx.textAlign='left';
-    }
-
-    // Zone Attaque
-    roundRect(56,760,W-112,130,18,'#111631',true);
-    roundRect(60,764,W-120,122,14,'#ffffff',true);
-
-    // coût (⚡)
-    let cost=parseInt($cost.value||0,10);
-    cost=Math.max(0,Math.min(4,cost));
-    for(let i=0;i<cost;i++){
-      ctx.beginPath();
-      ctx.arc(92 + i*42, 825, 16, 0, Math.PI*2);
-      ctx.fillStyle='#111631'; ctx.fill();
-      text(92+i*42, 825, '⚡', 18, '#fff','center');
-    }
-
-    // nom attaque + dégâts
-    text(92 + cost*42 + 10, 825, ($atk.value||'Attaque').slice(0,22), 28, '#111631', 'left', 'middle');
-    ctx.textAlign='right';
-    text(W-92, 825, ($dmg.value||0).toString(), 42, '#111631', 'right', 'middle');
-    ctx.textAlign='left';
-
-    // Bandeau bas (logo)
-    roundRect(56,H-150,W-112,86,18,'#111631',true);
-    roundRect(60,H-146,W-120,78,14,'#ffffff',true);
-    text(W/2, H-107, 'FIAKOMON TCG • Prototype', 18, '#111631','center');
-
-    // Ombre carte (esthétique)
-    ctx.save();
-    ctx.shadowColor='rgba(0,0,0,.25)'; ctx.shadowBlur=24;
-    ctx.restore();
-  }
-
-  function roundRect(x,y,w,h,r, color, fill=true){
+  // -------- Draw helpers
+  function rr(x,y,w,h,r, fill, color){
     ctx.beginPath();
     ctx.moveTo(x+r,y);
     ctx.arcTo(x+w,y,x+w,y+h,r);
@@ -207,52 +139,148 @@
     ctx.arcTo(x,y+h,x,y,r);
     ctx.arcTo(x,y,x+w,y,r);
     ctx.closePath();
-    if(fill){ ctx.fillStyle=color; ctx.fill(); } else { ctx.strokeStyle=color; ctx.stroke(); }
+    ctx[fill?'fill':'strokeStyle' in ctx ? 'stroke':'fillStyle'] = color;
+    fill ? (ctx.fillStyle=color, ctx.fill()) : (ctx.strokeStyle=color, ctx.stroke());
   }
-  function pill(x,y,w,h,color){ roundRect(x,y,w,h,h/2,color,true) }
-  function text(x,y,str,size,color,align='left',baseline='alphabetic'){
-    ctx.fillStyle=color; ctx.font=`${size}px system-ui,Segoe UI,Arial`; ctx.textAlign=align; ctx.textBaseline=baseline;
+  function text(x,y,str,size,color,align='left',base='alphabetic'){
+    ctx.fillStyle=color; ctx.font=`${size}px system-ui,Segoe UI,Arial`; ctx.textAlign=align; ctx.textBaseline=base;
     ctx.fillText(str,x,y);
   }
-
-  // Entrées → redraw
-  for(const id of ['name','hp','rarity','type','frameColor','attack','damage','cost']){
-    document.getElementById(id).addEventListener('input', draw);
+  function drawImageCover(img, x,y,w,h){
+    const r=Math.max(w/img.width,h/img.height);
+    const nw=img.width*r, nh=img.height*r, nx=x+(w-nw)/2, ny=y+(h-nh)/2;
+    ctx.drawImage(img,nx,ny,nw,nh);
+  }
+  function wrapText(str,x,y,maxW,lh,color='#111',align='left'){
+    ctx.fillStyle=color; ctx.textAlign=align; ctx.textBaseline='alphabetic';
+    const words=str.replace(/\r/g,'').split('\n');
+    let yy=y;
+    for(const block of words){
+      const parts=block.split(' ');
+      let line='';
+      for(const w of parts){
+        const test=line? line+' '+w : w;
+        if(ctx.measureText(test).width>maxW){
+          ctx.fillText(line,x,yy); yy+=lh; line=w;
+        }else line=test;
+      }
+      ctx.fillText(line,x,yy); yy+=lh;
+    }
+  }
+  // quarter-octagon corner tag (tl or tr)
+  function cornerTag(corner, label){
+    const W=cvs.width, H=cvs.height, m=46, w=116, h=64, cut=18;
+    ctx.save();
+    ctx.fillStyle='rgba(255,255,255,.95)'; ctx.strokeStyle='#111631'; ctx.lineWidth=2;
+    ctx.beginPath();
+    if(corner==='tl'){
+      ctx.moveTo(m,h+m-cut); ctx.lineTo(m,m+cut);
+      ctx.lineTo(m+cut,m); ctx.lineTo(m+w-cut,m); ctx.lineTo(m+w,m+cut);
+      ctx.lineTo(m+w,m+h-cut); ctx.lineTo(m+w-cut,m+h);
+      ctx.lineTo(m+cut,m+h); ctx.closePath();
+    }else{ // tr
+      const x=W-m-w;
+      ctx.moveTo(x,m+cut); ctx.lineTo(x+cut,m);
+      ctx.lineTo(x+w-cut,m); ctx.lineTo(x+w,m+cut);
+      ctx.lineTo(x+w,m+h-cut); ctx.lineTo(x+w-cut,m+h);
+      ctx.lineTo(x+cut,m+h); ctx.lineTo(x,m+h-cut); ctx.closePath();
+    }
+    ctx.fill(); ctx.stroke();
+    const tx = corner==='tl' ? (m+w/2) : (W-m-w/2);
+    text(tx, m+h/2, label, 24, '#111631','center','middle');
+    ctx.restore();
   }
 
-  // Image upload
-  $illus.addEventListener('change', async (e)=>{
+  // -------- Main draw
+  function draw(){
+    const W=cvs.width, H=cvs.height, m=28;
+    const rar = RARITY[f.rarity.value];
+    const band = f.tone.value || rar.band;
+    const full = !!rar.full;
+
+    // background
+    const g=ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,'#f7f8ff'); g.addColorStop(1,'#ebeeff');
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+
+    if(full){
+      // FULL-ART: image sur toute la carte, pas de bordure
+      if(illusImg) drawImageCover(illusImg, m, m, W-2*m, H-2*m);
+      rr(m,m,W-2*m,H-2*m,26,false,''); // just to keep rounded mask look
+      // panneau bas translucide (≈ 2/5 du bas)
+      const ph = Math.floor(H*0.34);
+      ctx.fillStyle = hexToRGBA(band, 0.78);
+      rr(m+20, H-ph-20, W-2*(m+20), ph, 18, true, ctx.fillStyle);
+      // Nom centré en haut du panneau
+      text(W/2, H-ph-20+36, (f.name.value||'Sans nom'), 44, '#ffffff','center','alphabetic');
+      ctx.font='18px system-ui,Segoe UI,Arial';
+      wrapText(f.desc.value, m+40, H-ph-20+72, W-2*(m+40), 28, '#ffffff','left');
+
+    }else{
+      // CADRE : bord + grande zone illustration en haut, bandeau coloré en bas
+      // cadre extérieur anthracite
+      rr(m,m,W-2*m,H-2*m,26,true,'#111631');
+      // cadre intérieur selon rareté
+      rr(m+8,m+8,W-2*(m+8),H-2*(m+8),22,true, rar.frame);
+      // fenêtres
+      const topH = Math.floor((H-2*(m+16))*0.60);  // ~3/5 en haut
+      // illustration
+      rr(m+16,m+16,W-2*(m+16),topH,16,true,'#ffffff');
+      if(illusImg) drawImageCover(illusImg, m+16, m+16, W-2*(m+16), topH);
+      // séparation fine au 2/5 du bas (donc limite zone texte)
+      ctx.fillStyle = rar.frame; ctx.fillRect(m+12, m+16+topH+6, W-2*(m+12), 4);
+
+      // zone bas teintée par la couleur de la rareté (légère)
+      const bottomY = m+16+topH+16;
+      const bottomH = H - bottomY - (m+16);
+      ctx.fillStyle = hexToRGBA(band, 0.15);
+      rr(m+16, bottomY, W-2*(m+16), bottomH, 16, true, ctx.fillStyle);
+      rr(m+22, bottomY+6, W-2*(m+22), bottomH-12, 12, true, '#ffffff');
+
+      // nom centré en haut de la partie basse
+      text(W/2, bottomY+36, (f.name.value||'Sans nom'), 42, '#111631','center','alphabetic');
+      ctx.font='18px system-ui,Segoe UI,Arial';
+      wrapText(f.desc.value, m+32, bottomY+72, W-2*(m+32), 28, '#111631','left');
+    }
+
+    // coins : extension (gauche) & PV (droite)
+    cornerTag('tl', (f.set.value||''));
+    cornerTag('tr', (String(f.hp.value||'') ));
+
+    // crédits bas
+    text(m+24, H-m-18, 'Art : ' + (f.artist.value||'-'), 16, '#111631','left','alphabetic');
+    text(W-m-24, H-m-18, (f.number.value||''), 16, '#111631','right','alphabetic');
+  }
+
+  // -------- small utils
+  function hexToRGBA(hex, a=1){
+    const h=hex.replace('#','');
+    const n=parseInt(h.length===3 ? h.split('').map(c=>c+c).join('') : h,16);
+    const r=(n>>16)&255, g=(n>>8)&255, b=n&255;
+    return `rgba(${r},${g},${b},${a})`;
+  }
+
+  // -------- events
+  ['name','hp','rarity','set','number','desc','artist','tone'].forEach(id=>{
+    $(id).addEventListener('input', draw);
+  });
+
+  f.illus.addEventListener('change', async (e)=>{
     const file = e.target.files?.[0];
     if(!file){ illusImg=null; draw(); return; }
-    const dataUrl = await fileToDataURL(file);
-    illusImg = await loadImage(dataUrl);
+    const dataUrl = await new Promise((res,rej)=>{const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file);});
+    illusImg = await new Promise((res,rej)=>{const im=new Image(); im.onload=()=>res(im); im.onerror=rej; im.src=dataUrl;});
     draw();
   });
-  $clear.addEventListener('click', ()=>{
-    $illus.value=''; illusImg=null; draw();
+  f.clear.addEventListener('click', ()=>{ f.illus.value=''; illusImg=null; draw(); });
+  f.dl.addEventListener('click', ()=>{
+    const a=document.createElement('a');
+    a.download = `${(f.name.value||'carte')}.png`;
+    a.href = cvs.toDataURL('image/png');
+    a.click();
   });
 
-  // Télécharger
-  $dl.addEventListener('click', ()=>{
-    const link=document.createElement('a');
-    link.download = `${($name.value||'fiakomon')}.png`;
-    link.href=cvs.toDataURL('image/png');
-    link.click();
-  });
-
-  function fileToDataURL(file){
-    return new Promise((res,rej)=>{
-      const r=new FileReader();
-      r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file);
-    });
-  }
-  function loadImage(src){
-    return new Promise((res,rej)=>{
-      const im = new Image(); im.onload=()=>res(im); im.onerror=rej; im.src=src;
-    });
-  }
-
-  // Premier rendu
+  // first render
   draw();
 })();
 </script>

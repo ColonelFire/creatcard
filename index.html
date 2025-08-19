@@ -313,29 +313,29 @@
   }
 
   function drawCompartmentLeft(x,y,w,h, notchX, notchY, color){
-    if(!color) return; // Compartiment masqué si cadre invisible
+    if(!color) return; // caché si cadre invisible
     ctx.beginPath();
-    // Notch sur le coin INTÉRIEUR (droite) du compartiment gauche
-    ctx.moveTo(x, y);                       // départ coin haut-gauche
-    ctx.lineTo(x + w - notchX, y);          // bord supérieur jusqu'avant le biseau
-    ctx.lineTo(x + w, y + notchY);          // biseau vers le bas (côté intérieur)
-    ctx.lineTo(x + w, y + h);               // bord droit
-    ctx.lineTo(x, y + h);                   // bas
+    // Notch INTÉRIEUR à DROITE pour le compartiment gauche
+    ctx.moveTo(x, y);                         // top-left
+    ctx.lineTo(x + w - notchX, y);            // haut jusqu'avant biseau
+    ctx.lineTo(x + w, y + notchY);            // biseau vers bas à droite (intérieur)
+    ctx.lineTo(x + w, y + h);                 // bord droit
+    ctx.lineTo(x, y + h);                     // bas
     ctx.closePath();
-    ctx.fillStyle = color;                  // même couleur que le cadre
+    ctx.fillStyle = color;
     ctx.fill();
   }
   function drawCompartmentRight(x,y,w,h, notchX, notchY, color){
-    if(!color) return; // Compartiment masqué si cadre invisible
+    if(!color) return; // caché si cadre invisible
     ctx.beginPath();
-    // Notch sur le coin INTÉRIEUR (gauche) du compartiment droit
-    ctx.moveTo(x + notchX, y);              // commencer après le biseau
-    ctx.lineTo(x, y + notchY);              // biseau vers le bas (côté intérieur)
-    ctx.lineTo(x, y + h);                   // bord gauche
-    ctx.lineTo(x + w, y + h);               // bas
-    ctx.lineTo(x + w, y);                   // bord droit
+    // Notch INTÉRIEUR à GAUCHE pour le compartiment droit
+    ctx.moveTo(x + notchX, y);                // top après biseau
+    ctx.lineTo(x + w, y);                     // haut jusqu'au coin droit
+    ctx.lineTo(x + w, y + h);                 // bord droit
+    ctx.lineTo(x, y + h);                     // bas
+    ctx.lineTo(x, y + notchY);                // bord gauche jusqu'au biseau
     ctx.closePath();
-    ctx.fillStyle = color;                  // même couleur que le cadre
+    ctx.fillStyle = color;
     ctx.fill();
   }
 

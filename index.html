@@ -1,409 +1,233 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Générateur de cartes TCG</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
   <style>
-    /* ====== Variables et constantes d'UI ====== */
-    :root {
-      /* Dimensions réelles à l'impression */
-      --card-w: 63mm;   /* 6.3 cm */
-      --card-h: 89mm;   /* 8.9 cm */
-      --frame-w: 2.5mm; /* bordure */
-      --comp-w: 10mm;   /* compartiments (ext, PV) */
-      --comp-h: 7mm;
-      --comp-notch: 3mm;/* petit angle */
-      --blue-h: 30mm;   /* bande description/attaques */
-      --left-pad: 6mm;  /* marge texte à gauche */
+    :root{
+      /* Couleurs (approximations faciles à modifier) */
+      --commun:       #8bc34a;   /* vert badge */
+      --peucommun:    #ffc107;   /* jaune badge */
+      --rare:         #ff7043;   /* orange badge */
+      --epic:         #f44336;   /* rouge badge */
+      --legendaire:   #f06292;   /* rose badge */
+      --exclusif:     #00c7a7;   /* turquoise badge */
+      --anthracite:   #2f2f35;   /* bordures communes/unco */
+      --noir:         #000;
+      --fond:         #0d0f13;
+      --paper:        #f5f5f5;
+    }
+    *{box-sizing:border-box}
+    body{margin:0; background:var(--fond); color:#e9eef3; font-family:Inter,system-ui,Segoe UI,Roboto,Arial,Helvetica,sans-serif;}
 
-      /* Couleurs par défaut (Commun) */
-      --frame-color: #515859; /* gris */
-      --corner-border: var(--frame-color);
-      --accent-hex: #93BF34;  /* zone bleue -> ici verte */
-      --accent-alpha: 1;      /* opacité bande (4–6 : <1) */
+    .wrap{max-width:1100px; margin:24px auto; padding:0 16px;}
+    h1{font-size:24px; font-weight:800; letter-spacing:0.3px; margin:0 0 12px}
+    .grid{display:grid; grid-template-columns: 360px 1fr; gap:18px}
+    @media (max-width: 980px){ .grid{grid-template-columns:1fr} }
 
-      --text-dark: #0D0D0D;
-      --text-light: #ffffff;
-      --paper: #f3f6f9;
+    /* ====== CARTE ====== */
+    .stage{display:flex; align-items:center; justify-content:center;}
+    .card{ position:relative; width:750px; height:1050px; border-radius:24px; background:#111; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.45);}
+    .card.border{ padding:18px;}
+    .card.border::before{ /* contour externe net */
+      content:""; position:absolute; inset:0; border-radius:24px; box-shadow:0 0 0 2px rgba(255,255,255,.05) inset; pointer-events:none;
     }
 
-    html, body { height: 100%; }
-    body {
-      margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
-      background: radial-gradient(1000px 400px at 20% 0%, #101114 0, #0b0c10 60%, #08090c 100%);
-      color: #e6e8eb;
-    }
+    .frame{ position:absolute; inset:0; border-radius:16px; overflow:hidden;}
 
-    .app {
-      display: grid;
-      grid-template-columns: 360px 1fr;
-      gap: 24px; padding: 20px; max-width: 1400px; margin: 0 auto;
-    }
+    /* illustration */
+    .art{ position:absolute; left:0; top:0; width:100%; height:65%; object-fit:cover; }
+    .fullbleed .art{ height:100%; }
 
-    /* ====== PANNEAU ====== */
-    .panel {
-      background: #13161b; border: 1px solid #222831; border-radius: 14px; padding: 16px; position: sticky; top: 12px; height: fit-content;
-      box-shadow: 0 10px 30px rgba(0,0,0,.35);
-    }
-    .panel h2 { margin: 0 0 12px; font-size: 18px; font-weight: 700; }
-    .group { margin: 14px 0; }
-    label { display: block; font-size: 12px; color: #a9b2bd; margin-bottom: 6px; }
-    select, input[type="text"], input[type="number"], textarea {
-      width: 100%; background: #0f1216; border: 1px solid #2a3038; color: #dfe3e8; border-radius: 10px; padding: 10px 12px; outline: none;
-    }
-    textarea { min-height: 90px; resize: vertical; }
-    input[type="file"] { width: 100%; }
-    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .small { font-size: 11px; color: #93a1ad; }
-    .hint { font-size: 12px; color: #9aa5b1; margin-top: 6px; }
-    .btn {
-      display: inline-flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 10px; border: 1px solid #2a3038; background: #0f1216; color: #e7ebf0; cursor: pointer;
-    }
+    /* barre horizontale (2/5 du bas \u2192 60% de hauteur) */
+    .sep{ position:absolute; left:18px; right:18px; top:60%; height:2px; background:rgba(255,255,255,.8); border-radius:1px; display:none;}
 
-    /* ====== PRÉVISUALISATION ====== */
-    .stage { display: grid; place-items: start center; padding: 10px; }
+    /* Panneau de texte bas */
+    .panel{ position:absolute; left:0; right:0; bottom:0; height:40%; background:rgba(245,245,245,.95); color:#0f0f14; padding:22px 26px 18px; display:flex; flex-direction:column; gap:10px;}
+    .panel.tinted{ color:#0b0e11; }
 
-    .card {
-      width: var(--card-w);
-      height: var(--card-h);
-      background: var(--paper);
-      border: var(--frame-w) solid var(--frame-color);
-      border-radius: 6mm; /* coins doux façon TCG */
-      box-shadow: 0 12px 40px rgba(0,0,0,.6);
-      position: relative;
-      box-sizing: border-box;
-      overflow: hidden; /* utile pour le full art */
-      color: var(--text-dark);
-      print-color-adjust: exact; -webkit-print-color-adjust: exact; color-adjust: exact;
-    }
+    .name{ font-family:"Bebas Neue", system-ui, -apple-system, sans-serif; font-size:56px; letter-spacing:1.5px; text-align:center; line-height:1; text-transform:uppercase; margin-top:2px;}
+    .attacks{ flex:1; white-space:pre-wrap; line-height:1.25; font-size:22px; }
 
-    .inner {
-      position: absolute; left: var(--frame-w); top: var(--frame-w);
-      width: calc(100% - (2 * var(--frame-w)));
-      height: calc(100% - (2 * var(--frame-w)));
-    }
+    .meta{ display:flex; justify-content:space-between; font-size:18px; opacity:.9;}
+    .meta .left{ max-width:70%;}
 
-    /* Compartiments EXT / PV */
-    .comp {
-      position: absolute; top: 0; width: var(--comp-w); height: var(--comp-h);
-      background: #ffffff; border: .6mm solid var(--corner-border); color: #111;
-      display: grid; place-items: center; font-weight: 700; letter-spacing: .3px;
-    }
-    .comp span { transform: translateY(-1px); font-size: 11px; }
+    /* Octogones de coins (1/4 d\'octogone) */
+    .corner{ position:absolute; width:120px; height:120px; background:var(--paper); color:#0f0f14; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:22px;}
+    .corner span{ transform:translateY(-2px) }
+    .corner.tl{ top:0; left:0; clip-path:polygon(0 0, 100% 0, 100% 36%, 36% 100%, 0 100%); border-bottom-right-radius:16px; box-shadow: 0 1px 0 rgba(0,0,0,.35) inset, 0 3px 18px rgba(0,0,0,.25);}
+    .corner.tr{ top:0; right:0; clip-path:polygon(0 0, 100% 0, 100% 100%, 64% 100%, 0 36%); border-bottom-left-radius:16px; box-shadow: 0 1px 0 rgba(0,0,0,.35) inset, 0 3px 18px rgba(0,0,0,.25);}    
 
-    .comp.left { left: 0; clip-path: polygon(0 0, 100% 0, 100% 100%, calc(100% - var(--comp-notch)) 100%, 0 calc(100% - var(--comp-notch))); border-top-left-radius: 2mm; }
-    .comp.right { right: 0; clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--comp-notch)), calc(100% - 0) calc(100% - var(--comp-notch)), 0 100%); border-top-right-radius: 2mm; }
+    /* Variantes de rareté (appliquées via classes) */
+    .r-commun.border{ border:18px solid var(--anthracite);}    
+    .r-peucommun.border{ border:18px solid var(--anthracite);} 
+    .r-rare.border{ border:20px solid var(--noir);}    
 
-    /* Zone image (classique) */
-    .art { position: absolute; left: 0; right: 0; top: 0; bottom: var(--blue-h); background: #e9edf1; display: grid; place-items: center; overflow: hidden; }
-    .art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .r-commun   .panel{ background:color-mix(in sRGB, var(--commun) 28%, #ffffff 72%);}
+    .r-peucommun .panel{ background:color-mix(in sRGB, var(--peucommun) 32%, #ffffff 68%);} 
+    .r-rare      .panel{ background:color-mix(in sRGB, var(--rare) 34%, #ffffff 66%);} 
 
-    /* Bande description/attaque */
-    .panel-desc {
-      position: absolute; left: 0; right: 0; bottom: 0; height: var(--blue-h);
-      /* Couleur déterminée en JS pour gérer l'opacité */
-      background: rgba(147,191,52,1);
-      display: grid; grid-template-rows: auto 1fr auto; gap: 3mm; align-content: start;
-      padding: 3mm 4mm 3mm 0; /* on gère la marge gauche via les blocs enfants */
-    }
+    .r-epic .panel, .r-legendaire .panel, .r-exclusif .panel{ background:rgba(255,255,255,.06); backdrop-filter: blur(6px); color:#fff; text-shadow:0 1px 0 rgba(0,0,0,.35);}    
+    .r-epic .panel{ background:color-mix(in sRGB, var(--epic) 40%, rgba(0,0,0,.55) 60%);} 
+    .r-legendaire .panel{ background:color-mix(in sRGB, var(--legendaire) 40%, rgba(0,0,0,.55) 60%);} 
+    .r-exclusif .panel{ background:color-mix(in sRGB, var(--exclusif) 40%, rgba(0,0,0,.55) 60%);} 
 
-    .name { font-weight: 800; font-size: 14px; padding-left: var(--left-pad); line-height: 1; padding-top: 1mm; }
-    .desc { font-size: 12px; padding-left: var(--left-pad); padding-right: 4mm; line-height: 1.25; white-space: pre-wrap; }
+    .show-sep .sep{ display:block }
 
-    .baseline { display: grid; grid-template-columns: 1fr auto; align-items: end; padding: 0 4mm 2mm; }
-    .illus { font-size: 10px; padding-left: var(--left-pad); opacity: .85; }
-    .num { font-size: 10px; opacity: .9; }
+    /* UI */
+    .controls{ background:#0f131a; border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:16px; display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+    .controls label{ font-size:12px; text-transform:uppercase; letter-spacing:.08em; opacity:.9 }
+    .controls input[type="text"], .controls input[type="number"], .controls textarea, .controls select{ width:100%; background:#121722; color:#e3e8ee; border:1px solid rgba(255,255,255,.1); border-radius:10px; padding:10px 12px; font-size:14px; outline:none}
+    .controls textarea{ min-height:98px; grid-column:1/-1 }
 
-    /* Modèle FULL ART : l'image occupe tout, la bande flotte par-dessus */
-    .fullart .art { top: 0; bottom: 0; }
-    .fullart .panel-desc { backdrop-filter: blur(2px); }
+    .row{ display:flex; gap:8px; align-items:end }
+    .btn{ background:#1f2a3a; border:1px solid rgba(255,255,255,.12); color:#e6edf5; padding:10px 12px; border-radius:10px; cursor:pointer; font-weight:600;}
+    .btn:hover{ filter:brightness(1.1)}
+    .hint{ font-size:12px; opacity:.8; }
 
-    /* Cadre Invisible */
-    .cadre-invisible { border-color: transparent !important; }
-
-    /* Prévisualisation grande sur écran, mais respect mm à l'impression */
-    .zoom-wrap { transform: scale(1.8); transform-origin: top center; }
-
-    /* Impression : une carte par page */
-    @media print {
-      body { background: #fff; }
-      .app { display: block; }
-      .panel { display: none; }
-      .stage { display: block; }
-      .zoom-wrap { transform: none; }
-      .card { margin: 10mm auto; }
-    }
+    .footer-note{margin-top:10px; font-size:12px; opacity:.7}
   </style>
 </head>
 <body>
-  <div class="app">
-    <aside class="panel">
-      <h2>Paramètres</h2>
-
-      <div class="group">
-        <label for="modele">Modèle de carte</label>
-        <select id="modele">
-          <option value="classique">Classique</option>
-          <option value="fullart">Full art</option>
-        </select>
-      </div>
-
-      <div class="group row">
-        <div>
-          <label for="cadre">Cadre</label>
-          <select id="cadre">
-            <option value="gris">Gris</option>
-            <option value="noir">Noir</option>
-            <option value="invisible">Invisible</option>
-          </select>
-        </div>
-        <div>
-          <label for="rarete">Rareté</label>
-          <select id="rarete">
-            <option value="Commun">Commun (1)</option>
-            <option value="Peu Commune">Peu Commune (2)</option>
-            <option value="Rare">Rare (3)</option>
-            <option value="Epic">Epic (4)</option>
-            <option value="Légendaire">Légendaire (5)</option>
-            <option value="Exluusif">Exluusif (6)</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="group row">
-        <div>
-          <label for="nom">Nom</label>
-          <input id="nom" type="text" placeholder="Nom de la créature" />
-        </div>
-        <div>
-          <label for="pv">PV</label>
-          <input id="pv" type="number" min="0" step="10" placeholder="120" />
-        </div>
-      </div>
-
-      <div class="group row">
-        <div>
-          <label for="extension">Extension</label>
-          <input id="extension" type="text" placeholder="CL01" />
-        </div>
-        <div>
-          <label for="numero">Numéro</label>
-          <input id="numero" type="text" placeholder="002/112" />
-        </div>
-      </div>
-
-      <div class="group">
-        <label for="illustrateur">Illustrateur</label>
-        <input id="illustrateur" type="text" placeholder="Nom de l'artiste" />
-      </div>
-
-      <div class="group">
-        <label for="desc">Description & Attaque</label>
-        <textarea id="desc" placeholder="Description de la créature, effets et/ou attaque…"></textarea>
-        <div class="hint">Texte aligné à gauche à <b>6&nbsp;mm</b> du bord, comme demandé.</div>
-      </div>
-
-      <div class="group">
-        <label for="image">Image (zone centrale)</label>
-        <input id="image" type="file" accept="image/*" />
-      </div>
-
-      <div class="group row">
-        <button class="btn" id="reset">Réinitialiser</button>
-        <button class="btn" id="exportPNG">Exporter en PNG</button>
-      </div>
-      <div class="small">Astuce : imprimez depuis le navigateur, les dimensions sont en millimètres.</div>
-    </aside>
-
-    <main class="stage">
-      <div class="zoom-wrap">
-        <div class="card" id="card">
-          <div class="inner">
-            <div class="comp left"><span id="extLbl">EXT</span></div>
-            <div class="comp right"><span id="pvLbl">120</span></div>
-
-            <div class="art"><img id="art-img" alt="Illustration" /></div>
-
-            <div class="panel-desc" id="panelDesc">
-              <div class="name" id="nameLbl">Nom de la créature</div>
-              <div class="desc" id="descLbl">Sa description et son attaque…</div>
-              <div class="baseline">
-                <div class="illus" id="illusLbl">Illus. Artiste</div>
-                <div class="num" id="numLbl">000/000</div>
+  <div class="wrap">
+    <h1>Générateur de cartes TCG</h1>
+    <div class="grid">
+      <!-- Prévisualisation carte -->
+      <div class="stage">
+        <div id="card" class="card border r-commun show-sep">
+          <div class="frame">
+            <img id="art" class="art" alt="illustration" />
+            <div class="sep"></div>
+            <div class="corner tl"><span id="extOut">EXT</span></div>
+            <div class="corner tr"><span id="hpOut">50</span></div>
+            <div class="panel">
+              <div id="nameOut" class="name">Nom de la créature</div>
+              <div id="atkOut" class="attacks">Capacité / Attaque…</div>
+              <div class="meta">
+                <div class="left"><span id="illusOut">Illustration: —</span></div>
+                <div class="right"><span id="numOut">#000</span></div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </main>
+
+      <!-- Formulaire -->
+      <div>
+        <div class="controls">
+          <div>
+            <label>Nom de la créature</label>
+            <input id="name" type="text" placeholder="Richus, Fiakomon…" />
+          </div>
+          <div>
+            <label>Rareté</label>
+            <select id="rarity">
+              <option>Commun</option>
+              <option>Peu Commun</option>
+              <option>Rare</option>
+              <option>Epic</option>
+              <option>Légendaire</option>
+              <option>Exclusif</option>
+            </select>
+          </div>
+
+          <div>
+            <label>Extension (coin haut-gauche)</label>
+            <input id="ext" type="text" placeholder="CL01, EV3.5…" />
+          </div>
+          <div>
+            <label>PV (coin haut-droit)</label>
+            <input id="hp" type="number" step="1" min="0" placeholder="50" />
+          </div>
+
+          <div>
+            <label>Illustrateur (bas-gauche)</label>
+            <input id="illus" type="text" placeholder="Minorium" />
+          </div>
+          <div>
+            <label>Numéro de carte (bas-droit)</label>
+            <input id="num" type="text" placeholder="#001" />
+          </div>
+
+          <div style="grid-column:1/-1">
+            <label>Attaque(s) / Texte (au centre de la zone basse)</label>
+            <textarea id="attacks" placeholder="\u221E Si X est dans votre défausse, ajoutez sa Force…\nCOMBO: Piochez 2 cartes."></textarea>
+          </div>
+
+          <div class="row" style="grid-column:1/-1">
+            <div>
+              <label>Illustration (import) </label><br>
+              <input id="file" type="file" accept="image/*" class="btn" />
+            </div>
+            <button id="dl" class="btn" style="margin-left:auto">Télécharger la carte (PNG)</button>
+          </div>
+        </div>
+        <p class="footer-note">Astuce : modifiez les couleurs dans <code>:root</code> si vous souhaitez coller exactement à votre charte.</p>
+      </div>
+    </div>
   </div>
 
-  <!-- Export PNG via html2canvas (chargé dynamiquement) -->
+  <!-- html2canvas pour export PNG -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script>
-    // Petite utilité : HEX -> rgba()
-    function hexToRgba(hex, alpha = 1) {
-      const h = hex.replace('#', '');
-      const bigint = parseInt(h, 16);
-      const r = (bigint >> 16) & 255;
-      const g = (bigint >> 8) & 255;
-      const b = bigint & 255;
-      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-    }
+    const qs = s => document.querySelector(s);
 
-    // Couleurs et règles par rareté
-    const RARETES = {
-      'Commun':       { bar: '#93BF34', frame: 'gris', alpha: 1, cornersBlack: false },
-      'Peu Commune':  { bar: '#F2AE30', frame: 'gris', alpha: 1, cornersBlack: false },
-      'Rare':         { bar: '#F25430', frame: 'noir', alpha: 1, cornersBlack: false },
-      'Epic':         { bar: '#F23030', frame: 'gris', alpha: 0.85, cornersBlack: true },
-      'Légendaire':   { bar: '#F26398', frame: 'noir', alpha: 0.85, cornersBlack: true },
-      'Exluusif':     { bar: '#04BF8A', frame: 'noir', alpha: 0.85, cornersBlack: true },
+    const PAL = {
+      "Commun":      { cls:"r-commun",      border:true,  sep:true  },
+      "Peu Commun":  { cls:"r-peucommun",   border:true,  sep:true  },
+      "Rare":        { cls:"r-rare",        border:true,  sep:true  },
+      "Epic":        { cls:"r-epic",        border:false, sep:false },
+      "Légendaire":  { cls:"r-legendaire",  border:false, sep:false },
+      "Exclusif":    { cls:"r-exclusif",    border:false, sep:false }
     };
 
-    // Cadres
-    const CADRES = {
-      gris: '#515859',
-      noir: '#0D0D0D',
-      invisible: 'transparent'
-    };
+    const card = qs('#card');
+    const art  = qs('#art');
 
-    // Éléments
-    const els = {
-      card: document.getElementById('card'),
-      panelDesc: document.getElementById('panelDesc'),
-      artImg: document.getElementById('art-img'),
-      // champs utilisateur
-      modele: document.getElementById('modele'),
-      cadre: document.getElementById('cadre'),
-      rarete: document.getElementById('rarete'),
-      nom: document.getElementById('nom'),
-      pv: document.getElementById('pv'),
-      extension: document.getElementById('extension'),
-      numero: document.getElementById('numero'),
-      illustrateur: document.getElementById('illustrateur'),
-      desc: document.getElementById('desc'),
-      image: document.getElementById('image'),
-      // labels sur la carte
-      nameLbl: document.getElementById('nameLbl'),
-      descLbl: document.getElementById('descLbl'),
-      extLbl: document.getElementById('extLbl'),
-      pvLbl: document.getElementById('pvLbl'),
-      illusLbl: document.getElementById('illusLbl'),
-      numLbl: document.getElementById('numLbl'),
-      // boutons
-      reset: document.getElementById('reset'),
-      exportPNG: document.getElementById('exportPNG'),
-    };
+    /* Bind champs -> rendu */
+    function sync(){
+      qs('#nameOut').textContent = qs('#name').value || 'Nom de la créature';
+      qs('#extOut').textContent  = qs('#ext').value  || 'EXT';
+      qs('#hpOut').textContent   = qs('#hp').value   || '50';
+      qs('#illusOut').textContent= (qs('#illus').value ? 'Illustration: ' + qs('#illus').value : 'Illustration: —');
+      qs('#numOut').textContent  = qs('#num').value || '#000';
+      qs('#atkOut').textContent  = qs('#attacks').value || 'Capacité / Attaque…';
 
-    // Cadre auto (recommandé par rareté) tant que l'utilisateur ne force pas un choix différent
-    let cadreAuto = true;
-
-    function applyCadre(value) {
-      const color = CADRES[value];
-      document.documentElement.style.setProperty('--frame-color', color);
-      els.card.classList.toggle('cadre-invisible', value === 'invisible');
-      // si rareté 1–3 -> les coins reprennent la couleur du cadre ; 4–6 -> noirs
-      const r = els.rarete.value;
-      const conf = RARETES[r];
-      const cornerColor = conf.cornersBlack ? CADRES['noir'] : color;
-      document.documentElement.style.setProperty('--corner-border', cornerColor);
+      // Rareté
+      const r = PAL[qs('#rarity').value];
+      card.className = `card ${r.border ? 'border' : ''} ${r.cls} ${r.sep ? 'show-sep' : 'fullbleed'}`;
     }
 
-    function applyRarete(r) {
-      const conf = RARETES[r];
-      // Bande colorée + opacité
-      document.documentElement.style.setProperty('--accent-hex', conf.bar);
-      document.documentElement.style.setProperty('--accent-alpha', conf.alpha);
-      els.panelDesc.style.background = hexToRgba(conf.bar, conf.alpha);
-      // coins
-      const cornerColor = conf.cornersBlack ? CADRES['noir'] : getComputedStyle(document.documentElement).getPropertyValue('--frame-color');
-      document.documentElement.style.setProperty('--corner-border', cornerColor.trim());
-      // Ajuster le cadre recommandé si l'utilisateur ne l'a pas forcé
-      if (cadreAuto) {
-        els.cadre.value = conf.frame;
-        applyCadre(conf.frame);
-      }
-    }
-
-    function syncText() {
-      els.nameLbl.textContent = els.nom.value || 'Nom de la créature';
-      els.descLbl.textContent = els.desc.value || 'Sa description et son attaque…';
-      els.extLbl.textContent = els.extension.value || 'EXT';
-      els.pvLbl.textContent = (els.pv.value || '').toString();
-      els.illusLbl.textContent = 'Illus. ' + (els.illustrateur.value || 'Artiste');
-      els.numLbl.textContent = els.numero.value || '000/000';
-    }
-
-    function applyModele(m) {
-      els.card.classList.toggle('fullart', m === 'fullart');
-    }
-
-    // Image uploader
-    els.image.addEventListener('change', (e) => {
-      const file = e.target.files && e.target.files[0];
-      if (!file) return;
-      const url = URL.createObjectURL(file);
-      els.artImg.src = url;
+    ['#name','#ext','#hp','#illus','#num','#attacks','#rarity'].forEach(id=>{
+      qs(id).addEventListener('input', sync);
+      qs(id).addEventListener('change', sync);
     });
 
-    // Écouteurs
-    els.modele.addEventListener('change', () => applyModele(els.modele.value));
-    els.cadre.addEventListener('change', () => { cadreAuto = false; applyCadre(els.cadre.value); });
-    els.rarete.addEventListener('change', () => applyRarete(els.rarete.value));
-
-    ['nom','desc','extension','pv','illustrateur','numero'].forEach(id => {
-      els[id].addEventListener('input', syncText);
+    // Import image
+    qs('#file').addEventListener('change', (e)=>{
+      const f = e.target.files && e.target.files[0];
+      if(!f) return;
+      const url = URL.createObjectURL(f);
+      art.src = url;
     });
 
-    // Reset
-    els.reset.addEventListener('click', () => {
-      document.querySelector('form')?.reset();
-      // valeurs par défaut
-      els.modele.value = 'classique';
-      els.cadre.value = 'gris';
-      els.rarete.value = 'Commun';
-      els.nom.value = '';
-      els.pv.value = '';
-      els.extension.value = '';
-      els.numero.value = '';
-      els.illustrateur.value = '';
-      els.desc.value = '';
-      els.artImg.src = '';
-      cadreAuto = true;
-      applyModele('classique');
-      applyRarete('Commun');
-      applyCadre('gris');
-      syncText();
+    // Export PNG haute résolution
+    qs('#dl').addEventListener('click', async ()=>{
+      const node = card; // capture uniquement la carte
+      // petite bordure claire autour pour detacher en PNG
+      node.style.boxShadow = '0 0 0 0 rgba(0,0,0,0)';
+      const canvas = await html2canvas(node, {backgroundColor:null, scale:3, useCORS:true});
+      const link = document.createElement('a');
+      link.download = (qs('#name').value || 'carte') + '.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
     });
 
-    // Export PNG (via html2canvas si disponible)
-    (function loadHtml2Canvas(){
-      const s = document.createElement('script');
-      s.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
-      s.onload = () => {
-        els.exportPNG.addEventListener('click', async () => {
-          // On clone la carte sans zoom pour exporter proprement
-          const node = document.getElementById('card');
-          const canvas = await html2canvas(node, { backgroundColor: null, scale: 4, useCORS: true });
-          const a = document.createElement('a');
-          a.href = canvas.toDataURL('image/png');
-          a.download = (els.nom.value || 'carte') + '.png';
-          a.click();
-        });
-      };
-      s.onerror = () => {
-        els.exportPNG.disabled = true;
-        els.exportPNG.textContent = 'Exporter en PNG (librairie indisponible)';
-      };
-      document.body.appendChild(s);
-    })();
-
-    // Initialisation
-    applyModele('classique');
-    applyRarete('Commun');
-    applyCadre('gris');
-    syncText();
+    // Valeurs par défaut
+    art.src = '';
+    sync();
   </script>
 </body>
 </html>

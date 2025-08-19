@@ -455,15 +455,15 @@
     ctx.font = `${pt(8)}px sans-serif`;
     ctx.fillStyle = '#0D0D0D';
 
-    // Colonne gauche : Attaque & Vitesse d'Attaque (alignée à gauche)
+    // Colonne gauche : Attaque & Vit.Attaque (alignée à gauche)
     ctx.textAlign = 'left';
     ctx.fillText(`Attaque : ${ (inputs.atk.value||'').toString() }`, zoneX + pad, statsTop);
-    ctx.fillText(`Vitesse d'Attaque : ${ (inputs.atkspd.value||'').toString() }`, zoneX + pad, statsTop + lhSmall);
+    ctx.fillText(`Vit.Attaque : ${ (inputs.atkspd.value||'').toString() }`, zoneX + pad, statsTop + lhSmall);
 
-    // Colonne droite : Défense & Vitesse de Défense (alignée à droite)
+    // Colonne droite : Défense & Vit.Défense (alignée à droite)
     ctx.textAlign = 'right';
     ctx.fillText(`Défense : ${ (inputs.def.value||'').toString() }`, zoneX + zoneW - pad, statsTop);
-    ctx.fillText(`Vitesse de Défense : ${ (inputs.defspd.value||'').toString() }`, zoneX + zoneW - pad, statsTop + lhSmall);
+    ctx.fillText(`Vit.Défense : ${ (inputs.defspd.value||'').toString() }`, zoneX + zoneW - pad, statsTop + lhSmall);
 
     // Mentions bas de carte (6 pt) à 1 mm des bords intérieur gauche/droite et du bas
     const m = 1 * MM; // marge

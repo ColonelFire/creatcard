@@ -373,7 +373,7 @@
     ctx.restore();
   }
 
-  function drawCompartmentLeft(x,y,w,h, notchX, notchY, color){
+  function compartmentLeft(x,y,w,h, notchX, notchY, color){
     // Compartiment gauche avec biseau en HAUT-DROIT (intérieur)
     ctx.beginPath();
     ctx.moveTo(x, y);                       // haut-gauche
@@ -385,7 +385,7 @@
     ctx.fillStyle = color;
     ctx.fill();
   }
-  function drawCompartmentRight(x,y,w,h, notchX, notchY, color){
+  function compartmentRight(x,y,w,h, notchX, notchY, color){
     // Compartiment droit avec biseau en HAUT-GAUCHE (intérieur)
     ctx.beginPath();
     ctx.moveTo(x + notchX, y);              // haut après biseau
@@ -452,8 +452,8 @@
     const leftBoxX  = innerX + 0;
     const rightBoxX = innerX + innerW - BOX_W;
     const compColor = (cadreColor ? cadreColor : '#0D0D0D');
-    drawCompartmentLeft(leftBoxX, boxY, BOX_W, BOX_H, NOTCH_SIDE, NOTCH_TOP, compColor);
-    drawCompartmentRight(rightBoxX, boxY, BOX_W, BOX_H, NOTCH_SIDE, NOTCH_TOP, compColor);
+    compartmentLeft(leftBoxX, boxY, BOX_W, BOX_H, NOTCH_SIDE, NOTCH_TOP, compColor);
+    compartmentRight(rightBoxX, boxY, BOX_W, BOX_H, NOTCH_SIDE, NOTCH_TOP, compColor);
 
     // Texte des compartiments (10 pt)
     ctx.fillStyle = '#000';
@@ -594,7 +594,7 @@
   // Ajuste l'aperçu pour garantir le bon ratio 63:89 quelle que soit la taille de la fenêtre
   function setPreviewSize(){
     const container = document.querySelector('.preview');
-    const maxW = Math.min(372, (container?.clientWidth||372) - 20);
+    const maxW = Math.min(372, ((container ? container.clientWidth : 372)) - 20);
     const cssW = Math.max(240, maxW);
     c.style.width  = cssW + 'px';
     c.style.height = (cssW * 89 / 63) + 'px';

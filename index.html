@@ -135,6 +135,20 @@
         </div>
       </div>
 
+      <!-- === Hexagone d'évolution === -->
+      <div class="group">
+        <label>Hexagone d'évolution (1 cm de diamètre)</label>
+        <div class="row">
+          <div>
+            <label><input id="hexOn" type="checkbox" checked> Afficher l'hexagone</label>
+          </div>
+          <div>
+            <input id="hexFile" type="file" accept="image/*" />
+          </div>
+        </div>
+        <p class="help">Bord 1&nbsp;mm (gris si rareté 1–2, noir sinon), fond blanc. Image optionnelle centrée.</p>
+      </div>
+
       <div class="group">
         <label>Image (arrière-plan)</label>
         <div class="btns">
@@ -181,9 +195,9 @@
       1: '#93BF34',   // Commun
       2: '#F2AE30',   // Peu Commune
       3: '#F25430',   // Rare
-      4: '#F23030',   // Epic
-      5: '#F26398',   // Légendaire
-      6: '#04BF8A'    // Exclusif
+      4: '#F23030',   // Epic (opaque)
+      5: '#F26398',   // Légendaire (opaque)
+      6: '#04BF8A'    // Exclusif (opaque)
     },
     coinsNoirs: '#0D0D0D'
   };
@@ -202,8 +216,18 @@
     cadre: $('cadre'), rarete: $('rarete'), nom: $('nom'), pv: $('pv'), extension: $('extension'),
     illustrateur: $('illustrateur'), numero: $('numero'), description: $('description'),
     atk: $('atk'), atkspd: $('atkspd'), def: $('def'), defspd: $('defspd'), spd: $('spd'),
+    hexOn: $('hexOn'), hexFile: $('hexFile'),
     file: $('file'), zoom: $('zoom'), zoomVal: $('zoomVal'), export: $('export'), clear: $('clear'), resetImg: $('resetImg')
   };
+
+  // Icônes de rareté à afficher à côté du numéro
+  const ICON_MAP = { 1:'images/C.png', 2:'images/PC.png', 3:'images/R.png', 4:'images/EP.png', 5:'images/L.png', 6:'images/EX.png' };
+  const ICON_LABEL = { 1:'C', 2:'PC', 3:'R', 4:'EP', 5:'L', 6:'EX' };
+  const rarityIcons = {};
+  for(const k in ICON_MAP){ const im = new Image(); im.src = ICON_MAP[k]; rarityIcons[k] = im; }
+
+  // Image optionnelle pour l'hexagone
+  let hexImg = null;
 
   // État image importée + déplacement/zoom
   let img = null;      // HTMLImageElement
@@ -227,6 +251,16 @@
 
   inputs.resetImg.addEventListener('click', () => {
     imgScale = 1; imgPos = { x: CARD_W/2, y: CARD_H/2 }; draw();
+  });
+
+  // Image hexagone
+  inputs.hexFile.addEventListener('change', e => {
+    if(e.target.files && e.target.files[0]){
+      const R = new FileReader();
+      R.onload = ev => { const i = new Image(); i.onload = () => { hexImg = i; draw(); }; i.src = ev.target.result; };
+      R.readAsDataURL(e.target.files[0]);
+    }
+  });
   });
 
   // Drag
@@ -301,7 +335,6 @@
   }
 
   function drawTopCornerCaps(){
-    // Coins noirs supérieurs (pour raretés 4–6), stylisés comme deux "L" épais
     const t = BORDER;
     ctx.fillStyle = COLORS.coinsNoirs;
     // coin gauche
@@ -312,28 +345,55 @@
     ctx.fillRect(CARD_W - t, 0, t, t*4);
   }
 
-  function drawCompartmentLeft(x,y,w,h, notchX, notchY, color){
-    if(!color) return; // caché si cadre invisible
+  // Dessine un hexagone plein (blanc) avec bord coloré, et optionnellement une image centrée à l'intérieur
+  function drawHexagonBadge(cx, cy, diameter, strokeColor, strokeMM, innerImage){
+    const r = diameter/2;
+    const pts = [];
+    for(let i=0;i<6;i++){
+      const ang = Math.PI/6 + i * Math.PI/3; // orientation à plat
+      pts.push({x: cx + r*Math.cos(ang), y: cy + r*Math.sin(ang)});
+    }
+    ctx.save();
     ctx.beginPath();
-    // Notch INTÉRIEUR à DROITE pour le compartiment gauche
-    ctx.moveTo(x, y);                         // top-left
-    ctx.lineTo(x + w - notchX, y);            // haut jusqu'avant biseau
-    ctx.lineTo(x + w, y + notchY);            // biseau vers bas à droite (intérieur)
-    ctx.lineTo(x + w, y + h);                 // bord droit
-    ctx.lineTo(x, y + h);                     // bas
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for(let i=1;i<6;i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.closePath();
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    ctx.lineWidth = strokeMM;
+    ctx.strokeStyle = strokeColor;
+    ctx.stroke();
+
+    if(innerImage && innerImage.complete && innerImage.naturalWidth){
+      ctx.save();
+      ctx.clip();
+      const box = diameter * 0.8; // marge intérieure
+      ctx.drawImage(innerImage, cx - box/2, cy - box/2, box, box);
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  function drawCompartmentLeft(x,y,w,h, notchX, notchY, color){
+    // Biseau sur le coin EXTERIEUR (haut-gauche)
+    ctx.beginPath();
+    ctx.moveTo(x + notchX, y);           // top après biseau
+    ctx.lineTo(x + w, y);                // jusqu'au coin haut-droit
+    ctx.lineTo(x + w, y + h);            // descendre
+    ctx.lineTo(x, y + h);                // bas gauche
+    ctx.lineTo(x, y + notchY);           // remonter jusqu'au biseau
     ctx.closePath();
     ctx.fillStyle = color;
     ctx.fill();
   }
   function drawCompartmentRight(x,y,w,h, notchX, notchY, color){
-    if(!color) return; // caché si cadre invisible
+    // Biseau sur le coin EXTERIEUR (haut-droit)
     ctx.beginPath();
-    // Notch INTÉRIEUR à GAUCHE pour le compartiment droit
-    ctx.moveTo(x + notchX, y);                // top après biseau
-    ctx.lineTo(x + w, y);                     // haut jusqu'au coin droit
-    ctx.lineTo(x + w, y + h);                 // bord droit
-    ctx.lineTo(x, y + h);                     // bas
-    ctx.lineTo(x, y + notchY);                // bord gauche jusqu'au biseau
+    ctx.moveTo(x, y);                    // top gauche
+    ctx.lineTo(x + w - notchX, y);       // top jusqu'avant biseau
+    ctx.lineTo(x + w, y + notchY);       // biseau vers le bas (extérieur)
+    ctx.lineTo(x + w, y + h);            // descendre
+    ctx.lineTo(x, y + h);                // bas gauche
     ctx.closePath();
     ctx.fillStyle = color;
     ctx.fill();
@@ -392,8 +452,9 @@
     const boxY = innerY + 0; // plaqué en haut
     const leftBoxX  = innerX + 0;
     const rightBoxX = innerX + innerW - BOX_W;
-    drawCompartmentLeft(leftBoxX, boxY, BOX_W, BOX_H, NOTCH_SIDE, NOTCH_TOP, cadreColor);
-    drawCompartmentRight(rightBoxX, boxY, BOX_W, BOX_H, NOTCH_SIDE, NOTCH_TOP, cadreColor);
+    const compColor = (cadreColor ? cadreColor : '#0D0D0D');
+    drawCompartmentLeft(leftBoxX, boxY, BOX_W, BOX_H, NOTCH_SIDE, NOTCH_TOP, compColor);
+    drawCompartmentRight(rightBoxX, boxY, BOX_W, BOX_H, NOTCH_SIDE, NOTCH_TOP, compColor);
 
     // Texte des compartiments (10 pt)
     ctx.fillStyle = '#000';
@@ -403,22 +464,34 @@
     ctx.fillText((inputs.extension.value||'').trim(), leftBoxX + BOX_W/2, boxY + BOX_H/2);
     ctx.fillText((inputs.pv.value||'').trim(), rightBoxX + BOX_W/2, boxY + BOX_H/2);
 
-    // Zone texte ("bleue") collée en bas, pleine largeur intérieure, hauteur 30 mm
+    // Zone texte ("bleue") collée en bas, pleine largeur intérieure, hauteur 30 mm
     const zoneX = innerX;
     const zoneW = innerW;
     const zoneH = BLUE_H;
     const zoneY = innerY + innerH - zoneH;
 
-    // Couleur selon rareté
+    // Hexagone d'évolution (en bas gauche de l'image)
+    if(inputs.hexOn && inputs.hexOn.checked){
+      const hexDiameter = 10 * MM; // 1 cm
+      const cx = innerX + (hexDiameter/2) + (1*MM);
+      const cy = zoneY - (hexDiameter/2) - (1*MM);
+      const strokeColor = (r<=2 ? '#515859' : '#0D0D0D');
+      drawHexagonBadge(cx, cy, hexDiameter, strokeColor, 1*MM, hexImg);
+    }
+
+    // Couleur selon rareté (opaque)
     const r = parseInt(inputs.rarete.value, 10);
+    ctx.save();
+    ctx.globalAlpha = 1;
     ctx.fillStyle = COLORS.zoneParRareté[r] || '#93BF34';
     ctx.fillRect(zoneX, zoneY, zoneW, zoneH);
+    ctx.restore();
 
     // Barre horizontale du cadre (au-dessus de la zone)
     drawHorizontalBar(cadreColor, zoneY);
 
-    // Coins noirs supérieurs pour les raretés 4/5/6
-    if(r >= 4) drawTopCornerCaps();
+    // Coins noirs supérieurs pour les raretés 4/5/6 (masqués si cadre invisible)
+    if(r >= 4 && cadreColor){ drawTopCornerCaps(); }
 
     // Nom (14 pt) – en haut de la zone
     const pad = 2 * MM; // marge interne
@@ -474,7 +547,43 @@
 
     ctx.textAlign = 'right';
     const num = (inputs.numero.value||'').trim();
-    ctx.fillText(num, CARD_W - BORDER - m, CARD_H - BORDER - m);
+
+    // Icône de rareté à côté du numéro
+    const iconSize = 7 * MM; // ~7 mm
+    const gapIcon = 1 * MM;
+    const icon = rarityIcons[r];
+    let numX = CARD_W - BORDER - m;
+    let iconDrawn = false;
+    if(icon && icon.complete && icon.naturalWidth){
+      const ix = CARD_W - BORDER - m - iconSize;
+      const iy = CARD_H - BORDER - m - iconSize + pt(6)*0.25; // alignement optique
+      ctx.drawImage(icon, ix, iy, iconSize, iconSize);
+      numX = ix - gapIcon; // décale le numéro à gauche de l'icône
+      iconDrawn = true;
+    }
+    if(!iconDrawn){
+      // Fallback : petit carré avec le code
+      const code = ICON_LABEL[r];
+      if(code){
+        const ix = CARD_W - BORDER - m - iconSize;
+        const iy = CARD_H - BORDER - m - iconSize + pt(6)*0.25;
+        ctx.save();
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(ix, iy, iconSize, iconSize);
+        ctx.strokeStyle = '#00000055';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(ix, iy, iconSize, iconSize);
+        ctx.fillStyle = '#0D0D0D';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = `bold ${pt(8)}px sans-serif`;
+        ctx.fillText(code, ix + iconSize/2, iy + iconSize/2);
+        ctx.restore();
+        numX = ix - gapIcon;
+      }
+    }
+    ctx.textAlign = 'right';
+    ctx.fillText(num, numX, CARD_H - BORDER - m);
 
     // Vitesse (8 pt, centré)
     ctx.textAlign = 'center';

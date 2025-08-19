@@ -6,7 +6,7 @@
   <title>Générateur de cartes TCG</title>
   <style>
     :root{
-      --bg:#114BBF;             /* Fond du site (RAL demandé) */
+      --bg:#8C8C8C;             /* Fond du site corrigé (RAL #8C8C8C) */
       --ui:#0b3890;             /* Panneaux */
       --ui-2:#0f44a9;           /* En-têtes */
       --text:#ECF2FF;           /* Texte clair */
@@ -128,7 +128,7 @@
 
     <div class="preview">
       <!-- Canvas plein format (300 DPI) mais réduit visuellement pour l’aperçu -->
-      <canvas id="card" width="744" height="1051" style="width:min(372px, 90vw);"></canvas>
+      <canvas id="card" width="744" height="1051"></canvas></canvas>
     </div>
   </div>
 
@@ -150,9 +150,9 @@
       1: '#93BF34',   // Commun
       2: '#F2AE30',   // Peu Commune
       3: '#F25430',   // Rare
-      4: 'rgba(242,48,48,0.85)',   // Epic (léger transparent)
-      5: 'rgba(242,99,152,0.85)',  // Légendaire
-      6: 'rgba(4,191,138,0.85)'    // Exclusif
+      4: '#F23030',   // Epic
+      5: '#F26398',   // Légendaire
+      6: '#04BF8A'    // Exclusif
     },
     coinsNoirs: '#0D0D0D'
   };
@@ -432,7 +432,18 @@
     ctx.fillText(num, CARD_W - BORDER - m, CARD_H - BORDER - m);
   }
 
+  // Ajuste l'aperçu pour garantir le bon ratio 63:89 quelle que soit la taille de la fenêtre
+  function setPreviewSize(){
+    const container = document.querySelector('.preview');
+    const maxW = Math.min(372, (container?.clientWidth||372) - 20);
+    const cssW = Math.max(240, maxW);
+    c.style.width  = cssW + 'px';
+    c.style.height = (cssW * 89 / 63) + 'px';
+  }
+  window.addEventListener('resize', () => { setPreviewSize(); });
+
   // Premier rendu
+  setPreviewSize();
   draw();
   </script>
 </body>

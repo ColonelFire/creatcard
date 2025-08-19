@@ -375,25 +375,25 @@
   }
 
   function drawCompartmentLeft(x,y,w,h, notchX, notchY, color){
-    // Biseau sur le coin EXTERIEUR (haut-gauche)
+    // Compartiment gauche avec biseau en HAUT-DROIT (intérieur)
     ctx.beginPath();
-    ctx.moveTo(x + notchX, y);           // top après biseau
-    ctx.lineTo(x + w, y);                // jusqu'au coin haut-droit
-    ctx.lineTo(x + w, y + h);            // descendre
-    ctx.lineTo(x, y + h);                // bas gauche
-    ctx.lineTo(x, y + notchY);           // remonter jusqu'au biseau
+    ctx.moveTo(x, y);                       // haut-gauche
+    ctx.lineTo(x + w - notchX, y);          // haut jusqu'avant le biseau
+    ctx.lineTo(x + w, y + notchY);          // biseau vers le bas côté intérieur
+    ctx.lineTo(x + w, y + h);               // descendre bord droit
+    ctx.lineTo(x, y + h);                   // bas
     ctx.closePath();
     ctx.fillStyle = color;
     ctx.fill();
   }
   function drawCompartmentRight(x,y,w,h, notchX, notchY, color){
-    // Biseau sur le coin EXTERIEUR (haut-droit)
+    // Compartiment droit avec biseau en HAUT-GAUCHE (intérieur)
     ctx.beginPath();
-    ctx.moveTo(x, y);                    // top gauche
-    ctx.lineTo(x + w - notchX, y);       // top jusqu'avant biseau
-    ctx.lineTo(x + w, y + notchY);       // biseau vers le bas (extérieur)
-    ctx.lineTo(x + w, y + h);            // descendre
-    ctx.lineTo(x, y + h);                // bas gauche
+    ctx.moveTo(x + notchX, y);              // haut après biseau
+    ctx.lineTo(x + w, y);                   // haut jusqu'au coin droit
+    ctx.lineTo(x + w, y + h);               // descendre bord droit
+    ctx.lineTo(x, y + h);                   // bas
+    ctx.lineTo(x, y + notchY);              // remonter jusqu'au biseau
     ctx.closePath();
     ctx.fillStyle = color;
     ctx.fill();

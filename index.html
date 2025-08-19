@@ -4,230 +4,436 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Générateur de cartes TCG</title>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
   <style>
     :root{
-      /* Couleurs (approximations faciles à modifier) */
-      --commun:       #8bc34a;   /* vert badge */
-      --peucommun:    #ffc107;   /* jaune badge */
-      --rare:         #ff7043;   /* orange badge */
-      --epic:         #f44336;   /* rouge badge */
-      --legendaire:   #f06292;   /* rose badge */
-      --exclusif:     #00c7a7;   /* turquoise badge */
-      --anthracite:   #2f2f35;   /* bordures communes/unco */
-      --noir:         #000;
-      --fond:         #0d0f13;
-      --paper:        #f5f5f5;
+      --bg:#114BBF;             /* Fond du site (RAL demandé) */
+      --ui:#0b3890;             /* Panneaux */
+      --ui-2:#0f44a9;           /* En-têtes */
+      --text:#ECF2FF;           /* Texte clair */
+      --card-shadow: rgba(0,0,0,.35);
     }
-    *{box-sizing:border-box}
-    body{margin:0; background:var(--fond); color:#e9eef3; font-family:Inter,system-ui,Segoe UI,Roboto,Arial,Helvetica,sans-serif;}
-
-    .wrap{max-width:1100px; margin:24px auto; padding:0 16px;}
-    h1{font-size:24px; font-weight:800; letter-spacing:0.3px; margin:0 0 12px}
-    .grid{display:grid; grid-template-columns: 360px 1fr; gap:18px}
-    @media (max-width: 980px){ .grid{grid-template-columns:1fr} }
-
-    /* ====== CARTE ====== */
-    .stage{display:flex; align-items:center; justify-content:center;}
-    .card{ position:relative; width:750px; height:1050px; border-radius:24px; background:#111; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.45);}
-    .card.border{ padding:18px;}
-    .card.border::before{ /* contour externe net */
-      content:""; position:absolute; inset:0; border-radius:24px; box-shadow:0 0 0 2px rgba(255,255,255,.05) inset; pointer-events:none;
+    *{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,Helvetica,sans-serif}
+    html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--text);display:flex;flex-direction:column}
+    header{background:var(--ui-2);padding:10px 16px;font-weight:700;letter-spacing:.3px;box-shadow:0 2px 0 rgba(0,0,0,.2)}
+    .app{display:grid;grid-template-columns:360px 1fr;gap:16px;padding:16px;min-height:0;flex:1}
+    .panel{background:var(--ui);padding:12px;border-radius:12px;box-shadow:0 8px 30px var(--card-shadow);overflow:auto}
+    .panel h2{margin:0 0 10px 0;font-size:18px}
+    .group{margin-bottom:12px}
+    .group label{display:block;font-size:12px;margin:0 0 6px 2px;opacity:.9}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    input[type="text"], input[type="number"], select, textarea{
+      width:100%;border:1px solid rgba(255,255,255,.2);border-radius:8px;background:#0a2e73;color:var(--text);
+      padding:10px;font-size:14px;outline:none
     }
-
-    .frame{ position:absolute; inset:0; border-radius:16px; overflow:hidden;}
-
-    /* illustration */
-    .art{ position:absolute; left:0; top:0; width:100%; height:65%; object-fit:cover; }
-    .fullbleed .art{ height:100%; }
-
-    /* barre horizontale (2/5 du bas \u2192 60% de hauteur) */
-    .sep{ position:absolute; left:18px; right:18px; top:60%; height:2px; background:rgba(255,255,255,.8); border-radius:1px; display:none;}
-
-    /* Panneau de texte bas */
-    .panel{ position:absolute; left:0; right:0; bottom:0; height:40%; background:rgba(245,245,245,.95); color:#0f0f14; padding:22px 26px 18px; display:flex; flex-direction:column; gap:10px;}
-    .panel.tinted{ color:#0b0e11; }
-
-    .name{ font-family:"Bebas Neue", system-ui, -apple-system, sans-serif; font-size:56px; letter-spacing:1.5px; text-align:center; line-height:1; text-transform:uppercase; margin-top:2px;}
-    .attacks{ flex:1; white-space:pre-wrap; line-height:1.25; font-size:22px; }
-
-    .meta{ display:flex; justify-content:space-between; font-size:18px; opacity:.9;}
-    .meta .left{ max-width:70%;}
-
-    /* Octogones de coins (1/4 d\'octogone) */
-    .corner{ position:absolute; width:120px; height:120px; background:var(--paper); color:#0f0f14; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:22px;}
-    .corner span{ transform:translateY(-2px) }
-    .corner.tl{ top:0; left:0; clip-path:polygon(0 0, 100% 0, 100% 36%, 36% 100%, 0 100%); border-bottom-right-radius:16px; box-shadow: 0 1px 0 rgba(0,0,0,.35) inset, 0 3px 18px rgba(0,0,0,.25);}
-    .corner.tr{ top:0; right:0; clip-path:polygon(0 0, 100% 0, 100% 100%, 64% 100%, 0 36%); border-bottom-left-radius:16px; box-shadow: 0 1px 0 rgba(0,0,0,.35) inset, 0 3px 18px rgba(0,0,0,.25);}    
-
-    /* Variantes de rareté (appliquées via classes) */
-    .r-commun.border{ border:18px solid var(--anthracite);}    
-    .r-peucommun.border{ border:18px solid var(--anthracite);} 
-    .r-rare.border{ border:20px solid var(--noir);}    
-
-    .r-commun   .panel{ background:color-mix(in sRGB, var(--commun) 28%, #ffffff 72%);}
-    .r-peucommun .panel{ background:color-mix(in sRGB, var(--peucommun) 32%, #ffffff 68%);} 
-    .r-rare      .panel{ background:color-mix(in sRGB, var(--rare) 34%, #ffffff 66%);} 
-
-    .r-epic .panel, .r-legendaire .panel, .r-exclusif .panel{ background:rgba(255,255,255,.06); backdrop-filter: blur(6px); color:#fff; text-shadow:0 1px 0 rgba(0,0,0,.35);}    
-    .r-epic .panel{ background:color-mix(in sRGB, var(--epic) 40%, rgba(0,0,0,.55) 60%);} 
-    .r-legendaire .panel{ background:color-mix(in sRGB, var(--legendaire) 40%, rgba(0,0,0,.55) 60%);} 
-    .r-exclusif .panel{ background:color-mix(in sRGB, var(--exclusif) 40%, rgba(0,0,0,.55) 60%);} 
-
-    .show-sep .sep{ display:block }
-
-    /* UI */
-    .controls{ background:#0f131a; border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:16px; display:grid; grid-template-columns:1fr 1fr; gap:12px;}
-    .controls label{ font-size:12px; text-transform:uppercase; letter-spacing:.08em; opacity:.9 }
-    .controls input[type="text"], .controls input[type="number"], .controls textarea, .controls select{ width:100%; background:#121722; color:#e3e8ee; border:1px solid rgba(255,255,255,.1); border-radius:10px; padding:10px 12px; font-size:14px; outline:none}
-    .controls textarea{ min-height:98px; grid-column:1/-1 }
-
-    .row{ display:flex; gap:8px; align-items:end }
-    .btn{ background:#1f2a3a; border:1px solid rgba(255,255,255,.12); color:#e6edf5; padding:10px 12px; border-radius:10px; cursor:pointer; font-weight:600;}
-    .btn:hover{ filter:brightness(1.1)}
-    .hint{ font-size:12px; opacity:.8; }
-
-    .footer-note{margin-top:10px; font-size:12px; opacity:.7}
+    textarea{min-height:84px;resize:vertical}
+    .btns{display:flex;gap:8px;flex-wrap:wrap}
+    button{
+      border:0;background:#173b97;color:#fff;padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:600
+    }
+    button.secondary{background:#0a2e73}
+    .preview{display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      border-radius:12px;box-shadow:0 8px 30px var(--card-shadow);position:relative}
+    canvas{display:block;max-width:100%;height:auto;box-shadow:0 18px 50px var(--card-shadow);background:#fff;border-radius:0}
+    .foot{opacity:.8;margin-top:8px;font-size:12px}
+    .zoombar{display:flex;gap:8px;align-items:center}
+    .zoombar input[type=range]{flex:1}
+    .badge{display:inline-block;background:#0a2e73;border:1px solid rgba(255,255,255,.2);padding:2px 6px;border-radius:6px;font-size:12px;margin-left:6px}
+    .help{font-size:12px;opacity:.9;line-height:1.4}
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <h1>Générateur de cartes TCG</h1>
-    <div class="grid">
-      <!-- Prévisualisation carte -->
-      <div class="stage">
-        <div id="card" class="card border r-commun show-sep">
-          <div class="frame">
-            <img id="art" class="art" alt="illustration" />
-            <div class="sep"></div>
-            <div class="corner tl"><span id="extOut">EXT</span></div>
-            <div class="corner tr"><span id="hpOut">50</span></div>
-            <div class="panel">
-              <div id="nameOut" class="name">Nom de la créature</div>
-              <div id="atkOut" class="attacks">Capacité / Attaque…</div>
-              <div class="meta">
-                <div class="left"><span id="illusOut">Illustration: —</span></div>
-                <div class="right"><span id="numOut">#000</span></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+  <header>Générateur de cartes TCG – 63 × 89 mm (impression 300 DPI)</header>
+  <div class="app">
+    <div class="panel" id="controls">
+      <h2>Paramètres</h2>
 
-      <!-- Formulaire -->
-      <div>
-        <div class="controls">
+      <div class="group">
+        <div class="row">
           <div>
-            <label>Nom de la créature</label>
-            <input id="name" type="text" placeholder="Richus, Fiakomon…" />
-          </div>
-          <div>
-            <label>Rareté</label>
-            <select id="rarity">
-              <option>Commun</option>
-              <option>Peu Commun</option>
-              <option>Rare</option>
-              <option>Epic</option>
-              <option>Légendaire</option>
-              <option>Exclusif</option>
+            <label for="cadre">Cadre</label>
+            <select id="cadre">
+              <option value="gris">Gris (#515859)</option>
+              <option value="noir">Noir (#0D0D0D)</option>
+              <option value="invisible">Invisible</option>
             </select>
           </div>
-
           <div>
-            <label>Extension (coin haut-gauche)</label>
-            <input id="ext" type="text" placeholder="CL01, EV3.5…" />
-          </div>
-          <div>
-            <label>PV (coin haut-droit)</label>
-            <input id="hp" type="number" step="1" min="0" placeholder="50" />
-          </div>
-
-          <div>
-            <label>Illustrateur (bas-gauche)</label>
-            <input id="illus" type="text" placeholder="Minorium" />
-          </div>
-          <div>
-            <label>Numéro de carte (bas-droit)</label>
-            <input id="num" type="text" placeholder="#001" />
-          </div>
-
-          <div style="grid-column:1/-1">
-            <label>Attaque(s) / Texte (au centre de la zone basse)</label>
-            <textarea id="attacks" placeholder="\u221E Si X est dans votre défausse, ajoutez sa Force…\nCOMBO: Piochez 2 cartes."></textarea>
-          </div>
-
-          <div class="row" style="grid-column:1/-1">
-            <div>
-              <label>Illustration (import) </label><br>
-              <input id="file" type="file" accept="image/*" class="btn" />
-            </div>
-            <button id="dl" class="btn" style="margin-left:auto">Télécharger la carte (PNG)</button>
+            <label for="rarete">Rareté</label>
+            <select id="rarete">
+              <option value="1">Commun</option>
+              <option value="2">Peu Commune</option>
+              <option value="3">Rare</option>
+              <option value="4">Epic</option>
+              <option value="5">Légendaire</option>
+              <option value="6">Exclusif</option>
+            </select>
           </div>
         </div>
-        <p class="footer-note">Astuce : modifiez les couleurs dans <code>:root</code> si vous souhaitez coller exactement à votre charte.</p>
       </div>
+
+      <div class="group">
+        <label for="nom">Nom (14 pt)</label>
+        <input id="nom" type="text" placeholder="Nom de la créature" />
+      </div>
+
+      <div class="group row">
+        <div>
+          <label for="pv">PV (10 pt)</label>
+          <input id="pv" type="text" placeholder="120" />
+        </div>
+        <div>
+          <label for="extension">Extension (10 pt)</label>
+          <input id="extension" type="text" placeholder="CL01" />
+        </div>
+      </div>
+
+      <div class="group row">
+        <div>
+          <label for="illustrateur">Illustrateur (6 pt)</label>
+          <input id="illustrateur" type="text" placeholder="Nom de l’illustrateur" />
+        </div>
+        <div>
+          <label for="numero">Numéro (6 pt)</label>
+          <input id="numero" type="text" placeholder="002/112" />
+        </div>
+      </div>
+
+      <div class="group">
+        <label for="description">Description & Attaque (10 pt – retour à la ligne auto)</label>
+        <textarea id="description" placeholder="Texte de description et attaque…"></textarea>
+      </div>
+
+      <div class="group">
+        <label>Image (arrière-plan)</label>
+        <div class="btns">
+          <input type="file" id="file" accept="image/*" />
+          <button id="resetImg" class="secondary">Réinitialiser l’image</button>
+        </div>
+        <div class="zoombar" style="margin-top:8px">
+          <span>Zoom</span>
+          <input id="zoom" type="range" min="0.2" max="3" step="0.01" value="1">
+          <span id="zoomVal" class="badge">100%</span>
+        </div>
+        <p class="help">Glissez l’image directement sur la carte pour la repositionner. Molette = zoom fin.</p>
+      </div>
+
+      <div class="group btns">
+        <button id="export">Télécharger PNG (300 DPI)</button>
+        <button id="clear" class="secondary">Effacer tout</button>
+      </div>
+
+      <div class="foot">Astuce : les dimensions et marges sont calculées en millimètres selon vos contraintes (bordure 2,5 mm, zone texte 30 mm de haut, compartiments 10×7 mm avec angle 6×3 mm).</div>
+    </div>
+
+    <div class="preview">
+      <!-- Canvas plein format (300 DPI) mais réduit visuellement pour l’aperçu -->
+      <canvas id="card" width="744" height="1051" style="width:min(372px, 90vw);"></canvas>
     </div>
   </div>
 
-  <!-- html2canvas pour export PNG -->
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script>
-    const qs = s => document.querySelector(s);
+  // === Constantes physiques ===
+  const DPI = 300;                  // Export et rendu natif en 300 DPI
+  const MM = DPI / 25.4;            // px par millimètre
+  const CARD_W = Math.round(63 * MM);   // 63 mm → largeur
+  const CARD_H = Math.round(89 * MM);   // 89 mm → hauteur
+  const BORDER = 2.5 * MM;              // 2,5 mm cadre
+  const BOX_W = 10 * MM, BOX_H = 7 * MM; // Compartiments 10×7 mm
+  const NOTCH_SIDE = 6 * MM, NOTCH_TOP = 3 * MM; // biseau 6×3 mm
+  const BLUE_H = 30 * MM;               // Zone "bleue" (texte) : 30 mm de haut
 
-    const PAL = {
-      "Commun":      { cls:"r-commun",      border:true,  sep:true  },
-      "Peu Commun":  { cls:"r-peucommun",   border:true,  sep:true  },
-      "Rare":        { cls:"r-rare",        border:true,  sep:true  },
-      "Epic":        { cls:"r-epic",        border:false, sep:false },
-      "Légendaire":  { cls:"r-legendaire",  border:false, sep:false },
-      "Exclusif":    { cls:"r-exclusif",    border:false, sep:false }
+  // Couleurs
+  const COLORS = {
+    cadre: { gris: '#515859', noir: '#0D0D0D', invisible: null },
+    zoneParRareté: {
+      1: '#93BF34',   // Commun
+      2: '#F2AE30',   // Peu Commune
+      3: '#F25430',   // Rare
+      4: 'rgba(242,48,48,0.85)',   // Epic (léger transparent)
+      5: 'rgba(242,99,152,0.85)',  // Légendaire
+      6: 'rgba(4,191,138,0.85)'    // Exclusif
+    },
+    coinsNoirs: '#0D0D0D'
+  };
+
+  // Conversion points → pixels (canvas à DPI constants)
+  const pt = v => v * DPI / 72; // 1 pt = 1/72 in
+
+  // Éléments DOM
+  const c = document.getElementById('card');
+  const ctx = c.getContext('2d');
+  c.width = CARD_W; c.height = CARD_H;
+
+  // Inputs
+  const $ = id => document.getElementById(id);
+  const inputs = {
+    cadre: $('cadre'), rarete: $('rarete'), nom: $('nom'), pv: $('pv'), extension: $('extension'),
+    illustrateur: $('illustrateur'), numero: $('numero'), description: $('description'),
+    file: $('file'), zoom: $('zoom'), zoomVal: $('zoomVal'), export: $('export'), clear: $('clear'), resetImg: $('resetImg')
+  };
+
+  // État image importée + déplacement/zoom
+  let img = null;      // HTMLImageElement
+  let imgPos = { x: CARD_W/2, y: CARD_H/2 }; // centre de l’image (en px carte)
+  let imgScale = 1;    // facteur de zoom
+  let dragging = false, dragStart = {x:0,y:0}, startPos={x:0,y:0};
+
+  function loadImage(file){
+    const reader = new FileReader();
+    reader.onload = e => {
+      const i = new Image();
+      i.onload = () => { img = i; imgScale = 1; imgPos = { x: CARD_W/2, y: CARD_H/2 }; draw(); };
+      i.src = e.target.result;
     };
+    reader.readAsDataURL(file);
+  }
 
-    const card = qs('#card');
-    const art  = qs('#art');
+  inputs.file.addEventListener('change', e => {
+    if(e.target.files && e.target.files[0]) loadImage(e.target.files[0]);
+  });
 
-    /* Bind champs -> rendu */
-    function sync(){
-      qs('#nameOut').textContent = qs('#name').value || 'Nom de la créature';
-      qs('#extOut').textContent  = qs('#ext').value  || 'EXT';
-      qs('#hpOut').textContent   = qs('#hp').value   || '50';
-      qs('#illusOut').textContent= (qs('#illus').value ? 'Illustration: ' + qs('#illus').value : 'Illustration: —');
-      qs('#numOut').textContent  = qs('#num').value || '#000';
-      qs('#atkOut').textContent  = qs('#attacks').value || 'Capacité / Attaque…';
+  inputs.resetImg.addEventListener('click', () => {
+    imgScale = 1; imgPos = { x: CARD_W/2, y: CARD_H/2 }; draw();
+  });
 
-      // Rareté
-      const r = PAL[qs('#rarity').value];
-      card.className = `card ${r.border ? 'border' : ''} ${r.cls} ${r.sep ? 'show-sep' : 'fullbleed'}`;
+  // Drag
+  c.addEventListener('pointerdown', e => {
+    const rect = c.getBoundingClientRect();
+    dragging = true;
+    dragStart = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    // convertir coords écran → coords canvas (selon taille CSS)
+    const scale = c.width / rect.width;
+    dragStart.x *= scale; dragStart.y *= scale;
+    startPos = { ...imgPos };
+    c.setPointerCapture(e.pointerId);
+  });
+  c.addEventListener('pointermove', e => {
+    if(!dragging || !img) return;
+    const rect = c.getBoundingClientRect();
+    const scale = c.width / rect.width;
+    const cur = { x: (e.clientX - rect.left) * scale, y: (e.clientY - rect.top) * scale };
+    imgPos.x = startPos.x + (cur.x - dragStart.x);
+    imgPos.y = startPos.y + (cur.y - dragStart.y);
+    draw();
+  });
+  c.addEventListener('pointerup', e => { dragging = false; c.releasePointerCapture(e.pointerId); });
+
+  // Molette = zoom fin
+  c.addEventListener('wheel', e => {
+    if(!img) return;
+    e.preventDefault();
+    const delta = -e.deltaY / 1000; // sens naturel
+    imgScale = Math.min(3, Math.max(0.2, imgScale * (1 + delta)));
+    inputs.zoom.value = imgScale.toFixed(2);
+    inputs.zoom.dispatchEvent(new Event('input'));
+  }, { passive:false });
+
+  inputs.zoom.addEventListener('input', () => {
+    imgScale = parseFloat(inputs.zoom.value);
+    inputs.zoomVal.textContent = Math.round(imgScale*100)+"%";
+    draw();
+  });
+
+  // Boutons
+  inputs.export.addEventListener('click', () => {
+    const url = c.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.href = url; a.download = `carte_tcg_${Date.now()}.png`;
+    a.click();
+  });
+  inputs.clear.addEventListener('click', () => {
+    ['nom','pv','extension','illustrateur','numero','description'].forEach(id => $(id).value='');
+    inputs.rarete.value='1'; inputs.cadre.value='gris'; img=null; draw();
+  });
+
+  // Redessin sur changement de paramètres
+  ['input','change'].forEach(evt => {
+    Object.values(inputs).forEach(el => { if(el && el.tagName){ el.addEventListener(evt, draw); } });
+  });
+
+  function drawFrame(color){
+    if(!color) return; // cadre invisible
+    ctx.fillStyle = color;
+    // 4 côtés
+    ctx.fillRect(0,0,CARD_W,BORDER);                         // haut
+    ctx.fillRect(0,CARD_H-BORDER,CARD_W,BORDER);             // bas
+    ctx.fillRect(0,0,BORDER,CARD_H);                         // gauche
+    ctx.fillRect(CARD_W-BORDER,0,BORDER,CARD_H);             // droite
+  }
+
+  function drawHorizontalBar(color, y){
+    if(!color) return;
+    ctx.fillStyle = color;
+    ctx.fillRect(BORDER, y - BORDER, CARD_W - 2*BORDER, BORDER);
+  }
+
+  function drawTopCornerCaps(){
+    // Coins noirs supérieurs (pour raretés 4–6), stylisés comme deux "L" épais
+    const t = BORDER;
+    ctx.fillStyle = COLORS.coinsNoirs;
+    // coin gauche
+    ctx.fillRect(0,0, t*4, t); // bande horizontale
+    ctx.fillRect(0,0, t, t*4); // bande verticale
+    // coin droit
+    ctx.fillRect(CARD_W - t*4, 0, t*4, t);
+    ctx.fillRect(CARD_W - t, 0, t, t*4);
+  }
+
+  function drawCompartmentLeft(x,y,w,h, notchX, notchY){
+    ctx.beginPath();
+    ctx.moveTo(x+notchX, y);               // après biseau horizontal
+    ctx.lineTo(x, y+notchY);               // biseau
+    ctx.lineTo(x, y+h);
+    ctx.lineTo(x+w, y+h);
+    ctx.lineTo(x+w, y);
+    ctx.closePath();
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    ctx.lineWidth = Math.max(1, BORDER*0.15);
+    ctx.strokeStyle = 'rgba(0,0,0,.15)';
+    ctx.stroke();
+  }
+  function drawCompartmentRight(x,y,w,h, notchX, notchY){
+    ctx.beginPath();
+    ctx.moveTo(x+w-notchX, y);            // avant biseau
+    ctx.lineTo(x+w, y+notchY);            // biseau
+    ctx.lineTo(x+w, y+h);
+    ctx.lineTo(x, y+h);
+    ctx.lineTo(x, y);
+    ctx.closePath();
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    ctx.lineWidth = Math.max(1, BORDER*0.15);
+    ctx.strokeStyle = 'rgba(0,0,0,.15)';
+    ctx.stroke();
+  }
+
+  function wrapText(text, maxWidth, fontPx){
+    const words = (text||'').split(/\s+/);
+    const lines = [];
+    let line = '';
+    for(let w of words){
+      const test = line ? line + ' ' + w : w;
+      const metrics = ctx.measureText(test);
+      if(metrics.width > maxWidth && line){
+        lines.push(line);
+        line = w;
+      } else {
+        line = test;
+      }
+    }
+    if(line) lines.push(line);
+    // Gestion des sauts de ligne manuels \n
+    const out=[]; lines.join('\n').split('\n').forEach(l=>{ if(l!=='') out.push(l); else out.push('') });
+    return out;
+  }
+
+  function draw(){
+    // Effacer
+    ctx.clearRect(0,0,CARD_W,CARD_H);
+
+    // Fond blanc de la carte
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0,0,CARD_W,CARD_H);
+
+    // Image importée (arrière-plan, couvrant la carte mais librement positionnable)
+    if(img){
+      // Calcul pour couvrir la carte en préservant le ratio
+      const scaleToCover = Math.max(CARD_W / img.width, CARD_H / img.height);
+      const scale = scaleToCover * imgScale;
+      const w = img.width * scale;
+      const h = img.height * scale;
+      const x = imgPos.x - w/2;
+      const y = imgPos.y - h/2;
+      ctx.drawImage(img, x, y, w, h);
     }
 
-    ['#name','#ext','#hp','#illus','#num','#attacks','#rarity'].forEach(id=>{
-      qs(id).addEventListener('input', sync);
-      qs(id).addEventListener('change', sync);
-    });
+    // Cadre
+    const cadreVal = inputs.cadre.value;                 // gris | noir | invisible
+    const cadreColor = COLORS.cadre[cadreVal];
+    drawFrame(cadreColor);
 
-    // Import image
-    qs('#file').addEventListener('change', (e)=>{
-      const f = e.target.files && e.target.files[0];
-      if(!f) return;
-      const url = URL.createObjectURL(f);
-      art.src = url;
-    });
+    // Limites internes (zone utile)
+    const innerX = BORDER, innerY = BORDER;
+    const innerW = CARD_W - 2*BORDER, innerH = CARD_H - 2*BORDER;
 
-    // Export PNG haute résolution
-    qs('#dl').addEventListener('click', async ()=>{
-      const node = card; // capture uniquement la carte
-      // petite bordure claire autour pour detacher en PNG
-      node.style.boxShadow = '0 0 0 0 rgba(0,0,0,0)';
-      const canvas = await html2canvas(node, {backgroundColor:null, scale:3, useCORS:true});
-      const link = document.createElement('a');
-      link.download = (qs('#name').value || 'carte') + '.png';
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-    });
+    // Compartiments (Extension et PV) collés en haut, à l'intérieur du cadre
+    const boxY = innerY + 0; // plaqué en haut
+    const leftBoxX  = innerX + 0;
+    const rightBoxX = innerX + innerW - BOX_W;
+    drawCompartmentLeft(leftBoxX, boxY, BOX_W, BOX_H, NOTCH_SIDE, NOTCH_TOP);
+    drawCompartmentRight(rightBoxX, boxY, BOX_W, BOX_H, NOTCH_SIDE, NOTCH_TOP);
 
-    // Valeurs par défaut
-    art.src = '';
-    sync();
+    // Texte des compartiments (10 pt)
+    ctx.fillStyle = '#000';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `${pt(10)}px sans-serif`;
+    ctx.fillText((inputs.extension.value||'').trim(), leftBoxX + BOX_W/2, boxY + BOX_H/2);
+    ctx.fillText((inputs.pv.value||'').trim(), rightBoxX + BOX_W/2, boxY + BOX_H/2);
+
+    // Zone texte ("bleue") collée en bas, pleine largeur intérieure, hauteur 30 mm
+    const zoneX = innerX;
+    const zoneW = innerW;
+    const zoneH = BLUE_H;
+    const zoneY = innerY + innerH - zoneH;
+
+    // Couleur selon rareté
+    const r = parseInt(inputs.rarete.value, 10);
+    ctx.fillStyle = COLORS.zoneParRareté[r] || '#93BF34';
+    ctx.fillRect(zoneX, zoneY, zoneW, zoneH);
+
+    // Barre horizontale du cadre (au-dessus de la zone)
+    drawHorizontalBar(cadreColor, zoneY);
+
+    // Coins noirs supérieurs pour les raretés 4/5/6
+    if(r >= 4) drawTopCornerCaps();
+
+    // Nom (14 pt) – en haut de la zone
+    const pad = 2 * MM; // marge interne
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = '#0D0D0D';
+    ctx.font = `700 ${pt(14)}px sans-serif`;
+    const nom = (inputs.nom.value || '').toUpperCase();
+    ctx.fillText(nom, zoneX + zoneW/2, zoneY + pad);
+
+    // Description (10 pt), centrée dans l'espace restant de la zone
+    const descTop = zoneY + pad + pt(14) + pad; // espace sous le nom
+    const availH  = zoneY + zoneH - descTop - pad;
+    const maxWidth = zoneW - pad*2;
+
+    ctx.font = `${pt(10)}px sans-serif`;
+    ctx.fillStyle = '#0D0D0D';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+
+    const lines = wrapText(inputs.description.value || '', maxWidth, pt(10));
+    const lineHeight = pt(10) * 1.25;
+    const blockH = lines.length * lineHeight;
+    let y = descTop + Math.max(0, (availH - blockH)/2);
+    for(const line of lines){
+      ctx.fillText(line, zoneX + zoneW/2, y);
+      y += lineHeight;
+    }
+
+    // Mentions bas de carte (6 pt) à 1 mm des bords intérieur gauche/droite et du bas
+    const m = 1 * MM; // marge
+    ctx.font = `${pt(6)}px sans-serif`;
+    ctx.fillStyle = '#0D0D0D';
+    ctx.textBaseline = 'alphabetic';
+    ctx.textAlign = 'left';
+    const illu = (inputs.illustrateur.value||'').trim();
+    ctx.fillText(illu, BORDER + m, CARD_H - BORDER - m);
+
+    ctx.textAlign = 'right';
+    const num = (inputs.numero.value||'').trim();
+    ctx.fillText(num, CARD_W - BORDER - m, CARD_H - BORDER - m);
+  }
+
+  // Premier rendu
+  draw();
   </script>
 </body>
 </html>

@@ -105,6 +105,36 @@
       </div>
 
       <div class="group">
+        <label>Statistiques (8 pt)</label>
+        <div class="row">
+          <div>
+            <label for="atk">Attaque</label>
+            <input id="atk" type="number" placeholder="31" />
+          </div>
+          <div>
+            <label for="def">Défense</label>
+            <input id="def" type="number" placeholder="30" />
+          </div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div>
+            <label for="atkspd">Vitesse d'Attaque</label>
+            <input id="atkspd" type="number" placeholder="34" />
+          </div>
+          <div>
+            <label for="defspd">Vitesse de Défense</label>
+            <input id="defspd" type="number" placeholder="33" />
+          </div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div>
+            <label for="spd">Vitesse (bas de carte)</label>
+            <input id="spd" type="number" placeholder="30" />
+          </div>
+        </div>
+      </div>
+
+      <div class="group">
         <label>Image (arrière-plan)</label>
         <div class="btns">
           <input type="file" id="file" accept="image/*" />
@@ -170,6 +200,7 @@
   const inputs = {
     cadre: $('cadre'), rarete: $('rarete'), nom: $('nom'), pv: $('pv'), extension: $('extension'),
     illustrateur: $('illustrateur'), numero: $('numero'), description: $('description'),
+    atk: $('atk'), atkspd: $('atkspd'), def: $('def'), defspd: $('defspd'), spd: $('spd'),
     file: $('file'), zoom: $('zoom'), zoomVal: $('zoomVal'), export: $('export'), clear: $('clear'), resetImg: $('resetImg')
   };
 
@@ -390,18 +421,18 @@
     // Coins noirs supérieurs pour les raretés 4/5/6
     if(r >= 4) drawTopCornerCaps();
 
-    // Nom (14 pt) – en haut de la zone
+    // Nom (14 pt) – en haut de la zone
     const pad = 2 * MM; // marge interne
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     ctx.fillStyle = '#0D0D0D';
     ctx.font = `700 ${pt(14)}px sans-serif`;
     const nom = (inputs.nom.value || '').toUpperCase();
-    ctx.fillText(nom, zoneX + zoneW/2, zoneY + pad);
+    const nameY = zoneY + pad;
+    ctx.fillText(nom, zoneX + zoneW/2, nameY);
 
-    // Description (10 pt), centrée dans l'espace restant de la zone
-    const descTop = zoneY + pad + pt(14) + pad; // espace sous le nom
-    const availH  = zoneY + zoneH - descTop - pad;
+    // Description (10 pt), 1 mm sous le nom (pas de centrage vertical)
+    const descTop = nameY + pt(14) + 1*MM; // 1 mm sous le nom
     const maxWidth = zoneW - pad*2;
 
     ctx.font = `${pt(10)}px sans-serif`;
@@ -411,12 +442,27 @@
 
     const lines = wrapText(inputs.description.value || '', maxWidth, pt(10));
     const lineHeight = pt(10) * 1.25;
-    const blockH = lines.length * lineHeight;
-    let y = descTop + Math.max(0, (availH - blockH)/2);
+    let y = descTop;
     for(const line of lines){
       ctx.fillText(line, zoneX + zoneW/2, y);
       y += lineHeight;
     }
+
+    // Statistiques (8 pt) sous la description
+    const statsTop = y + 1*MM; // 1 mm sous la description
+    const lhSmall = pt(8) * 1.25;
+    ctx.font = `${pt(8)}px sans-serif`;
+    ctx.fillStyle = '#0D0D0D';
+
+    // Colonne gauche : Attaque & Vitesse d'Attaque (alignée à gauche)
+    ctx.textAlign = 'left';
+    ctx.fillText(`Attaque : ${ (inputs.atk.value||'').toString() }`, zoneX + pad, statsTop);
+    ctx.fillText(`Vitesse d'Attaque : ${ (inputs.atkspd.value||'').toString() }`, zoneX + pad, statsTop + lhSmall);
+
+    // Colonne droite : Défense & Vitesse de Défense (alignée à droite)
+    ctx.textAlign = 'right';
+    ctx.fillText(`Défense : ${ (inputs.def.value||'').toString() }`, zoneX + zoneW - pad, statsTop);
+    ctx.fillText(`Vitesse de Défense : ${ (inputs.defspd.value||'').toString() }`, zoneX + zoneW - pad, statsTop + lhSmall);
 
     // Mentions bas de carte (6 pt) à 1 mm des bords intérieur gauche/droite et du bas
     const m = 1 * MM; // marge
@@ -430,6 +476,12 @@
     ctx.textAlign = 'right';
     const num = (inputs.numero.value||'').trim();
     ctx.fillText(num, CARD_W - BORDER - m, CARD_H - BORDER - m);
+
+    // Vitesse (8 pt, centré)
+    ctx.textAlign = 'center';
+    ctx.font = `${pt(8)}px sans-serif`;
+    const spd = (inputs.spd.value||'').toString();
+    if(spd){ ctx.fillText(`Vitesse : ${spd}`, CARD_W/2, CARD_H - BORDER - m); }
   }
 
   // Ajuste l'aperçu pour garantir le bon ratio 63:89 quelle que soit la taille de la fenêtre

@@ -3,136 +3,105 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Générateur de cartes TCG</title>
+  <title>Générateur de cartes TCG — bord unique blanc</title>
   <style>
-    /* ====== Variables et constantes d'UI ====== */
-    :root {
-      /* Dimensions réelles à l'impression */
-      --card-w: 63mm;   /* 6.3 cm */
-      --card-h: 89mm;   /* 8.9 cm */
-      --frame-w: 2.5mm; /* bordure */
-      --comp-w: 10mm;   /* compartiments (ext, PV) */
+    :root{
+      /* Dimensions réelles pour l'impression */
+      --card-w: 63mm;
+      --card-h: 89mm;
+      --frame-w: 2.5mm;
+      --comp-w: 10mm;
       --comp-h: 7mm;
-      --comp-notch: 3mm;/* petit angle */
-      --blue-h: 30mm;   /* bande description/attaques */
-      --left-pad: 6mm;  /* marge texte à gauche */
+      --comp-notch: 3mm; /* angle coupé */
+      --blue-h: 30mm;
+      --left-pad: 6mm;
 
-      /* Couleurs par défaut (Commun) */
-      --frame-color: #515859; /* gris */
-      --corner-border: var(--frame-color);
-      --accent-hex: #93BF34;  /* zone bleue -> ici verte */
-      --accent-alpha: 1;      /* opacité bande (4–6 : <1) */
+      /* Bord unique blanc */
+      --frame-color: #ffffff;
+      --corner-border: #ffffff;
 
-      --text-dark: #0D0D0D;
-      --text-light: #ffffff;
-      --paper: #f3f6f9;
+      /* Couleurs bande par défaut (Commun) */
+      --accent-hex:#93BF34;
+      --accent-alpha:1;
+
+      --text-dark:#0D0D0D;
+      --paper:#f3f6f9;
     }
 
-    html, body { height: 100%; }
-    body {
-      margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
-      background: radial-gradient(1000px 400px at 20% 0%, #101114 0, #0b0c10 60%, #08090c 100%);
-      color: #e6e8eb;
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,"Noto Sans",sans-serif;
+      background:#114BBF; /* fond demandé */
+      color:#e6e8eb;
     }
 
-    .app {
-      display: grid;
-      grid-template-columns: 360px 1fr;
-      gap: 24px; padding: 20px; max-width: 1400px; margin: 0 auto;
+    .app{display:grid;grid-template-columns:360px 1fr;gap:24px;padding:20px;max-width:1400px;margin:0 auto}
+    .panel{background:#13161b;border:1px solid #222831;border-radius:14px;padding:16px;position:sticky;top:12px;height:fit-content;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+    .panel h2{margin:0 0 12px;font-size:18px;font-weight:700}
+    .group{margin:14px 0}
+    label{display:block;font-size:12px;color:#a9b2bd;margin-bottom:6px}
+    select,input[type="text"],input[type="number"],textarea{width:100%;background:#0f1216;border:1px solid #2a3038;color:#dfe3e8;border-radius:10px;padding:10px 12px;outline:none}
+    textarea{min-height:90px;resize:vertical}
+    input[type="file"]{width:100%}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;border:1px solid #2a3038;background:#0f1216;color:#e7ebf0;cursor:pointer}
+
+    /* PRÉVISU */
+    .stage{display:grid;place-items:start center;padding:10px}
+    .zoom-wrap{transform:scale(1.8);transform-origin:top center}
+
+    .card{
+      width:var(--card-w); height:var(--card-h);
+      background:var(--paper);
+      border:var(--frame-w) solid var(--frame-color); /* bord unique blanc */
+      border-radius:0; /* carré */
+      box-shadow:0 12px 40px rgba(0,0,0,.6);
+      position:relative; box-sizing:border-box; overflow:hidden; color:var(--text-dark);
+      print-color-adjust:exact; -webkit-print-color-adjust:exact; color-adjust:exact;
     }
+    .inner{position:absolute;left:var(--frame-w);top:var(--frame-w);width:calc(100% - 2*var(--frame-w));height:calc(100% - 2*var(--frame-w))}
 
-    /* ====== PANNEAU ====== */
-    .panel {
-      background: #13161b; border: 1px solid #222831; border-radius: 14px; padding: 16px; position: sticky; top: 12px; height: fit-content;
-      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+    /* Compartiments toujours visibles au-dessus de l'image */
+    .comp{
+      position:absolute; top:0; width:var(--comp-w); height:var(--comp-h);
+      background:#ffffff; border:.6mm solid var(--corner-border); color:#111;
+      display:grid; place-items:center; font-weight:700; letter-spacing:.3px;
+      z-index:3;
     }
-    .panel h2 { margin: 0 0 12px; font-size: 18px; font-weight: 700; }
-    .group { margin: 14px 0; }
-    label { display: block; font-size: 12px; color: #a9b2bd; margin-bottom: 6px; }
-    select, input[type="text"], input[type="number"], textarea {
-      width: 100%; background: #0f1216; border: 1px solid #2a3038; color: #dfe3e8; border-radius: 10px; padding: 10px 12px; outline: none;
+    .comp span{transform:translateY(-1px);font-size:11px}
+    .comp.left{left:0;clip-path:polygon(0 0,100% 0,100% 100%,calc(100% - var(--comp-notch)) 100%,0 calc(100% - var(--comp-notch)));border-top-left-radius:0}
+    .comp.right{right:0;clip-path:polygon(0 0,100% 0,100% calc(100% - var(--comp-notch)),100% calc(100% - var(--comp-notch)),0 100%);border-top-right-radius:0}
+
+    /* Illustration derrière tout */
+    .art{position:absolute;left:0;right:0;top:0;bottom:var(--blue-h);background:#e9edf1;display:grid;place-items:center;overflow:hidden;z-index:1}
+    .art img{width:100%;height:100%;object-fit:cover;display:block}
+
+    /* Bande bas */
+    .panel-desc{
+      position:absolute;left:0;right:0;bottom:0;height:var(--blue-h);
+      background: rgba(147,191,52,1); /* surchargée en JS */
+      display:grid;grid-template-rows:auto 1fr auto;gap:3mm;align-content:start;
+      padding:3mm 4mm 3mm 0;
+      z-index:2;
     }
-    textarea { min-height: 90px; resize: vertical; }
-    input[type="file"] { width: 100%; }
-    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .small { font-size: 11px; color: #93a1ad; }
-    .hint { font-size: 12px; color: #9aa5b1; margin-top: 6px; }
-    .btn {
-      display: inline-flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 10px; border: 1px solid #2a3038; background: #0f1216; color: #e7ebf0; cursor: pointer;
-    }
+    .name{font-weight:800;font-size:14px;padding-left:var(--left-pad);line-height:1;padding-top:1mm}
+    .desc{font-size:12px;padding-left:var(--left-pad);padding-right:4mm;line-height:1.25;white-space:pre-wrap}
+    .baseline{display:grid;grid-template-columns:1fr auto;align-items:end;padding:0 4mm 2mm}
+    .illus{font-size:10px;padding-left:var(--left-pad);opacity:.85}
+    .num{font-size:10px;opacity:.9}
 
-    /* ====== PRÉVISUALISATION ====== */
-    .stage { display: grid; place-items: start center; padding: 10px; }
+    /* Full art : image sur toute la carte, bande flottante */
+    .fullart .art{top:0;bottom:0}
+    .fullart .panel-desc{backdrop-filter:blur(2px)}
 
-    .card {
-      width: var(--card-w);
-      height: var(--card-h);
-      background: var(--paper);
-      border: var(--frame-w) solid var(--frame-color);
-      border-radius: 6mm; /* coins doux façon TCG */
-      box-shadow: 0 12px 40px rgba(0,0,0,.6);
-      position: relative;
-      box-sizing: border-box;
-      overflow: hidden; /* utile pour le full art */
-      color: var(--text-dark);
-      print-color-adjust: exact; -webkit-print-color-adjust: exact; color-adjust: exact;
-    }
-
-    .inner {
-      position: absolute; left: var(--frame-w); top: var(--frame-w);
-      width: calc(100% - (2 * var(--frame-w)));
-      height: calc(100% - (2 * var(--frame-w)));
-    }
-
-    /* Compartiments EXT / PV */
-    .comp {
-      position: absolute; top: 0; width: var(--comp-w); height: var(--comp-h);
-      background: #ffffff; border: .6mm solid var(--corner-border); color: #111;
-      display: grid; place-items: center; font-weight: 700; letter-spacing: .3px;
-    }
-    .comp span { transform: translateY(-1px); font-size: 11px; }
-
-    .comp.left { left: 0; clip-path: polygon(0 0, 100% 0, 100% 100%, calc(100% - var(--comp-notch)) 100%, 0 calc(100% - var(--comp-notch))); border-top-left-radius: 2mm; }
-    .comp.right { right: 0; clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--comp-notch)), calc(100% - 0) calc(100% - var(--comp-notch)), 0 100%); border-top-right-radius: 2mm; }
-
-    /* Zone image (classique) */
-    .art { position: absolute; left: 0; right: 0; top: 0; bottom: var(--blue-h); background: #e9edf1; display: grid; place-items: center; overflow: hidden; }
-    .art img { width: 100%; height: 100%; object-fit: cover; display: block; }
-
-    /* Bande description/attaque */
-    .panel-desc {
-      position: absolute; left: 0; right: 0; bottom: 0; height: var(--blue-h);
-      /* Couleur déterminée en JS pour gérer l'opacité */
-      background: rgba(147,191,52,1);
-      display: grid; grid-template-rows: auto 1fr auto; gap: 3mm; align-content: start;
-      padding: 3mm 4mm 3mm 0; /* on gère la marge gauche via les blocs enfants */
-    }
-
-    .name { font-weight: 800; font-size: 14px; padding-left: var(--left-pad); line-height: 1; padding-top: 1mm; }
-    .desc { font-size: 12px; padding-left: var(--left-pad); padding-right: 4mm; line-height: 1.25; white-space: pre-wrap; }
-
-    .baseline { display: grid; grid-template-columns: 1fr auto; align-items: end; padding: 0 4mm 2mm; }
-    .illus { font-size: 10px; padding-left: var(--left-pad); opacity: .85; }
-    .num { font-size: 10px; opacity: .9; }
-
-    /* Modèle FULL ART : l'image occupe tout, la bande flotte par-dessus */
-    .fullart .art { top: 0; bottom: 0; }
-    .fullart .panel-desc { backdrop-filter: blur(2px); }
-
-    /* Cadre Invisible */
-    .cadre-invisible { border-color: transparent !important; }
-
-    /* Prévisualisation grande sur écran, mais respect mm à l'impression */
-    .zoom-wrap { transform: scale(1.8); transform-origin: top center; }
-
-    /* Impression : une carte par page */
-    @media print {
-      body { background: #fff; }
-      .app { display: block; }
-      .panel { display: none; }
-      .stage { display: block; }
-      .zoom-wrap { transform: none; }
-      .card { margin: 10mm auto; }
+    @media print{
+      body{background:#fff}
+      .app{display:block}
+      .panel{display:none}
+      .stage{display:block}
+      .zoom-wrap{transform:none}
+      .card{margin:10mm auto}
     }
   </style>
 </head>
@@ -149,71 +118,59 @@
         </select>
       </div>
 
-      <div class="group row">
-        <div>
-          <label for="cadre">Cadre</label>
-          <select id="cadre">
-            <option value="gris">Gris</option>
-            <option value="noir">Noir</option>
-            <option value="invisible">Invisible</option>
-          </select>
-        </div>
-        <div>
-          <label for="rarete">Rareté</label>
-          <select id="rarete">
-            <option value="Commun">Commun (1)</option>
-            <option value="Peu Commune">Peu Commune (2)</option>
-            <option value="Rare">Rare (3)</option>
-            <option value="Epic">Epic (4)</option>
-            <option value="Légendaire">Légendaire (5)</option>
-            <option value="Exluusif">Exluusif (6)</option>
-          </select>
-        </div>
+      <div class="group">
+        <label for="rarete">Rareté</label>
+        <select id="rarete">
+          <option value="Commun">Commun (1)</option>
+          <option value="Peu Commune">Peu Commune (2)</option>
+          <option value="Rare">Rare (3)</option>
+          <option value="Epic">Epic (4)</option>
+          <option value="Légendaire">Légendaire (5)</option>
+          <option value="Exluusif">Exluusif (6)</option>
+        </select>
       </div>
 
       <div class="group row">
         <div>
           <label for="nom">Nom</label>
-          <input id="nom" type="text" placeholder="Nom de la créature" />
+          <input id="nom" type="text" placeholder="Nom de la créature"/>
         </div>
         <div>
           <label for="pv">PV</label>
-          <input id="pv" type="number" min="0" step="10" placeholder="120" />
+          <input id="pv" type="number" min="0" step="10" placeholder="120"/>
         </div>
       </div>
 
       <div class="group row">
         <div>
           <label for="extension">Extension</label>
-          <input id="extension" type="text" placeholder="CL01" />
+          <input id="extension" type="text" placeholder="CL01"/>
         </div>
         <div>
           <label for="numero">Numéro</label>
-          <input id="numero" type="text" placeholder="002/112" />
+          <input id="numero" type="text" placeholder="002/112"/>
         </div>
       </div>
 
       <div class="group">
         <label for="illustrateur">Illustrateur</label>
-        <input id="illustrateur" type="text" placeholder="Nom de l'artiste" />
+        <input id="illustrateur" type="text" placeholder="Nom de l'artiste"/>
       </div>
 
       <div class="group">
         <label for="desc">Description & Attaque</label>
         <textarea id="desc" placeholder="Description de la créature, effets et/ou attaque…"></textarea>
-        <div class="hint">Texte aligné à gauche à <b>6&nbsp;mm</b> du bord, comme demandé.</div>
       </div>
 
       <div class="group">
-        <label for="image">Image (zone centrale)</label>
-        <input id="image" type="file" accept="image/*" />
+        <label for="image">Image (illustration)</label>
+        <input id="image" type="file" accept="image/*"/>
       </div>
 
       <div class="group row">
         <button class="btn" id="reset">Réinitialiser</button>
         <button class="btn" id="exportPNG">Exporter en PNG</button>
       </div>
-      <div class="small">Astuce : imprimez depuis le navigateur, les dimensions sont en millimètres.</div>
     </aside>
 
     <main class="stage">
@@ -223,7 +180,7 @@
             <div class="comp left"><span id="extLbl">EXT</span></div>
             <div class="comp right"><span id="pvLbl">120</span></div>
 
-            <div class="art"><img id="art-img" alt="Illustration" /></div>
+            <div class="art"><img id="art-img" alt="Illustration"/></div>
 
             <div class="panel-desc" id="panelDesc">
               <div class="name" id="nameLbl">Nom de la créature</div>
@@ -239,43 +196,29 @@
     </main>
   </div>
 
-  <!-- Export PNG via html2canvas (chargé dynamiquement) -->
   <script>
-    // Petite utilité : HEX -> rgba()
-    function hexToRgba(hex, alpha = 1) {
-      const h = hex.replace('#', '');
-      const bigint = parseInt(h, 16);
-      const r = (bigint >> 16) & 255;
-      const g = (bigint >> 8) & 255;
-      const b = bigint & 255;
-      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    // util
+    function hexToRgba(hex, alpha=1){
+      const h = hex.replace('#','');
+      const n = parseInt(h,16);
+      return `rgba(${(n>>16)&255}, ${(n>>8)&255}, ${n&255}, ${alpha})`;
     }
 
-    // Couleurs et règles par rareté
+    // Raretés
     const RARETES = {
-      'Commun':       { bar: '#93BF34', frame: 'gris', alpha: 1, cornersBlack: false },
-      'Peu Commune':  { bar: '#F2AE30', frame: 'gris', alpha: 1, cornersBlack: false },
-      'Rare':         { bar: '#F25430', frame: 'noir', alpha: 1, cornersBlack: false },
-      'Epic':         { bar: '#F23030', frame: 'gris', alpha: 0.85, cornersBlack: true },
-      'Légendaire':   { bar: '#F26398', frame: 'noir', alpha: 0.85, cornersBlack: true },
-      'Exluusif':     { bar: '#04BF8A', frame: 'noir', alpha: 0.85, cornersBlack: true },
+      'Commun':      { bar:'#93BF34', alpha:1,   cornersBlack:false },
+      'Peu Commune': { bar:'#F2AE30', alpha:1,   cornersBlack:false },
+      'Rare':        { bar:'#F25430', alpha:1,   cornersBlack:false },
+      'Epic':        { bar:'#F23030', alpha:.85, cornersBlack:true  },
+      'Légendaire':  { bar:'#F26398', alpha:.85, cornersBlack:true  },
+      'Exluusif':    { bar:'#04BF8A', alpha:.85, cornersBlack:true  },
     };
 
-    // Cadres
-    const CADRES = {
-      gris: '#515859',
-      noir: '#0D0D0D',
-      invisible: 'transparent'
-    };
-
-    // Éléments
     const els = {
       card: document.getElementById('card'),
       panelDesc: document.getElementById('panelDesc'),
       artImg: document.getElementById('art-img'),
-      // champs utilisateur
       modele: document.getElementById('modele'),
-      cadre: document.getElementById('cadre'),
       rarete: document.getElementById('rarete'),
       nom: document.getElementById('nom'),
       pv: document.getElementById('pv'),
@@ -284,125 +227,72 @@
       illustrateur: document.getElementById('illustrateur'),
       desc: document.getElementById('desc'),
       image: document.getElementById('image'),
-      // labels sur la carte
       nameLbl: document.getElementById('nameLbl'),
       descLbl: document.getElementById('descLbl'),
       extLbl: document.getElementById('extLbl'),
       pvLbl: document.getElementById('pvLbl'),
       illusLbl: document.getElementById('illusLbl'),
       numLbl: document.getElementById('numLbl'),
-      // boutons
       reset: document.getElementById('reset'),
       exportPNG: document.getElementById('exportPNG'),
     };
 
-    // Cadre auto (recommandé par rareté) tant que l'utilisateur ne force pas un choix différent
-    let cadreAuto = true;
-
-    function applyCadre(value) {
-      const color = CADRES[value];
-      document.documentElement.style.setProperty('--frame-color', color);
-      els.card.classList.toggle('cadre-invisible', value === 'invisible');
-      // si rareté 1–3 -> les coins reprennent la couleur du cadre ; 4–6 -> noirs
-      const r = els.rarete.value;
+    function applyRarete(r){
       const conf = RARETES[r];
-      const cornerColor = conf.cornersBlack ? CADRES['noir'] : color;
+      els.panelDesc.style.background = hexToRgba(conf.bar, conf.alpha);
+      const cornerColor = conf.cornersBlack ? '#0D0D0D' : '#ffffff'; // noir pour 4–6, blanc sinon
       document.documentElement.style.setProperty('--corner-border', cornerColor);
     }
-
-    function applyRarete(r) {
-      const conf = RARETES[r];
-      // Bande colorée + opacité
-      document.documentElement.style.setProperty('--accent-hex', conf.bar);
-      document.documentElement.style.setProperty('--accent-alpha', conf.alpha);
-      els.panelDesc.style.background = hexToRgba(conf.bar, conf.alpha);
-      // coins
-      const cornerColor = conf.cornersBlack ? CADRES['noir'] : getComputedStyle(document.documentElement).getPropertyValue('--frame-color');
-      document.documentElement.style.setProperty('--corner-border', cornerColor.trim());
-      // Ajuster le cadre recommandé si l'utilisateur ne l'a pas forcé
-      if (cadreAuto) {
-        els.cadre.value = conf.frame;
-        applyCadre(conf.frame);
-      }
-    }
-
-    function syncText() {
+    function applyModele(m){ els.card.classList.toggle('fullart', m === 'fullart'); }
+    function syncText(){
       els.nameLbl.textContent = els.nom.value || 'Nom de la créature';
       els.descLbl.textContent = els.desc.value || 'Sa description et son attaque…';
-      els.extLbl.textContent = els.extension.value || 'EXT';
-      els.pvLbl.textContent = (els.pv.value || '').toString();
-      els.illusLbl.textContent = 'Illus. ' + (els.illustrateur.value || 'Artiste');
-      els.numLbl.textContent = els.numero.value || '000/000';
+      els.extLbl.textContent  = els.extension.value || 'EXT';
+      els.pvLbl.textContent   = (els.pv.value || '').toString();
+      els.illusLbl.textContent= 'Illus. ' + (els.illustrateur.value || 'Artiste');
+      els.numLbl.textContent  = els.numero.value || '000/000';
     }
-
-    function applyModele(m) {
-      els.card.classList.toggle('fullart', m === 'fullart');
-    }
-
-    // Image uploader
-    els.image.addEventListener('change', (e) => {
-      const file = e.target.files && e.target.files[0];
-      if (!file) return;
-      const url = URL.createObjectURL(file);
-      els.artImg.src = url;
+    els.image.addEventListener('change', e=>{
+      const f = e.target.files && e.target.files[0];
+      if(!f) return;
+      els.artImg.src = URL.createObjectURL(f);
     });
 
-    // Écouteurs
-    els.modele.addEventListener('change', () => applyModele(els.modele.value));
-    els.cadre.addEventListener('change', () => { cadreAuto = false; applyCadre(els.cadre.value); });
-    els.rarete.addEventListener('change', () => applyRarete(els.rarete.value));
-
-    ['nom','desc','extension','pv','illustrateur','numero'].forEach(id => {
+    els.modele.addEventListener('change', ()=>applyModele(els.modele.value));
+    els.rarete.addEventListener('change', ()=>applyRarete(els.rarete.value));
+    ['nom','desc','extension','pv','illustrateur','numero'].forEach(id=>{
       els[id].addEventListener('input', syncText);
     });
 
-    // Reset
-    els.reset.addEventListener('click', () => {
-      document.querySelector('form')?.reset();
-      // valeurs par défaut
-      els.modele.value = 'classique';
-      els.cadre.value = 'gris';
-      els.rarete.value = 'Commun';
-      els.nom.value = '';
-      els.pv.value = '';
-      els.extension.value = '';
-      els.numero.value = '';
-      els.illustrateur.value = '';
-      els.desc.value = '';
-      els.artImg.src = '';
-      cadreAuto = true;
+    els.reset.addEventListener('click', ()=>{
+      els.modele.value='classique';
+      els.rarete.value='Commun';
+      ['nom','pv','extension','numero','illustrateur','desc'].forEach(id=>els[id].value='');
+      els.artImg.src='';
       applyModele('classique');
       applyRarete('Commun');
-      applyCadre('gris');
       syncText();
     });
 
-    // Export PNG (via html2canvas si disponible)
+    // Export PNG
     (function loadHtml2Canvas(){
       const s = document.createElement('script');
-      s.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
-      s.onload = () => {
-        els.exportPNG.addEventListener('click', async () => {
-          // On clone la carte sans zoom pour exporter proprement
-          const node = document.getElementById('card');
-          const canvas = await html2canvas(node, { backgroundColor: null, scale: 4, useCORS: true });
-          const a = document.createElement('a');
-          a.href = canvas.toDataURL('image/png');
-          a.download = (els.nom.value || 'carte') + '.png';
-          a.click();
+      s.src='https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
+      s.onload=()=>{
+        els.exportPNG.addEventListener('click', async ()=>{
+          const node=document.getElementById('card');
+          const canvas=await html2canvas(node,{backgroundColor:null,scale:4,useCORS:true});
+          const a=document.createElement('a');
+          a.href=canvas.toDataURL('image/png'); a.download=(els.nom.value||'carte')+'.png'; a.click();
         });
       };
-      s.onerror = () => {
-        els.exportPNG.disabled = true;
-        els.exportPNG.textContent = 'Exporter en PNG (librairie indisponible)';
-      };
+      s.onerror=()=>{ els.exportPNG.disabled=true; els.exportPNG.textContent='Exporter en PNG (librairie indisponible)'; };
       document.body.appendChild(s);
     })();
 
-    // Initialisation
+    // init
     applyModele('classique');
     applyRarete('Commun');
-    applyCadre('gris');
     syncText();
   </script>
 </body>

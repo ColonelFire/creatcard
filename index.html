@@ -173,7 +173,7 @@
 
     <div class="preview">
       <!-- Canvas plein format (300 DPI) mais réduit visuellement pour l’aperçu -->
-      <canvas id="card" width="744" height="1051"></canvas></canvas>
+      <canvas id="card" width="744" height="1051"></canvas>
     </div>
   </div>
 
@@ -260,7 +260,6 @@
       R.onload = ev => { const i = new Image(); i.onload = () => { hexImg = i; draw(); }; i.src = ev.target.result; };
       R.readAsDataURL(e.target.files[0]);
     }
-  });
   });
 
   // Drag
@@ -470,7 +469,15 @@
     const zoneH = BLUE_H;
     const zoneY = innerY + innerH - zoneH;
 
-    // Hexagone d'évolution (en bas gauche de l'image)
+    // Couleur selon rareté (opaque)
+    const r = parseInt(inputs.rarete.value, 10);
+    ctx.fillStyle = COLORS.zoneParRareté[r] || '#93BF34';
+    ctx.fillRect(zoneX, zoneY, zoneW, zoneH);
+
+    // Barre horizontale du cadre (au-dessus de la zone)
+    drawHorizontalBar(cadreColor, zoneY);
+
+    // Hexagone d'évolution (au-dessus de l'image et juste au-dessus de la zone)
     if(inputs.hexOn && inputs.hexOn.checked){
       const hexDiameter = 10 * MM; // 1 cm
       const cx = innerX + (hexDiameter/2) + (1*MM);
@@ -478,14 +485,6 @@
       const strokeColor = (r<=2 ? '#515859' : '#0D0D0D');
       drawHexagonBadge(cx, cy, hexDiameter, strokeColor, 1*MM, hexImg);
     }
-
-    // Couleur selon rareté (opaque)
-    const r = parseInt(inputs.rarete.value, 10);
-    ctx.save();
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = COLORS.zoneParRareté[r] || '#93BF34';
-    ctx.fillRect(zoneX, zoneY, zoneW, zoneH);
-    ctx.restore();
 
     // Barre horizontale du cadre (au-dessus de la zone)
     drawHorizontalBar(cadreColor, zoneY);

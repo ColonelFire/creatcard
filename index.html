@@ -6,7 +6,7 @@
   <title>Générateur de cartes TCG</title>
   <style>
     :root{
-      --bg:#8C8C8C;             /* Fond du site corrigé (RAL #8C8C8C) */
+      --bg:#8C8C8C;             /* Fond du site gris clair (RAL #8C8C8C) */
       --ui:#0b3890;             /* Panneaux */
       --ui-2:#0f44a9;           /* En-têtes */
       --text:#ECF2FF;           /* Texte clair */
@@ -28,9 +28,7 @@
     }
     textarea{min-height:84px;resize:vertical}
     .btns{display:flex;gap:8px;flex-wrap:wrap}
-    button{
-      border:0;background:#173b97;color:#fff;padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:600
-    }
+    button{border:0;background:#173b97;color:#fff;padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:600}
     button.secondary{background:#0a2e73}
     .preview{display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
       border-radius:12px;box-shadow:0 8px 30px var(--card-shadow);position:relative}
@@ -38,7 +36,6 @@
     .foot{opacity:.8;margin-top:8px;font-size:12px}
     .zoombar{display:flex;gap:8px;align-items:center}
     .zoombar input[type=range]{flex:1}
-    .badge{display:inline-block;background:#0a2e73;border:1px solid rgba(255,255,255,.2);padding:2px 6px;border-radius:6px;font-size:12px;margin-left:6px}
     .help{font-size:12px;opacity:.9;line-height:1.4}
   </style>
 </head>
@@ -104,7 +101,7 @@
         <textarea id="description" placeholder="Texte de description et attaque…"></textarea>
       </div>
 
-      <!-- === Statistiques (nouvelle section) === -->
+      <!-- Statistiques -->
       <div class="group">
         <label>Statistiques (8 pt)</label>
         <div class="row">
@@ -135,7 +132,7 @@
         </div>
       </div>
 
-      <!-- === Hexagone d'évolution === -->
+      <!-- Hexagone d'évolution -->
       <div class="group">
         <label>Hexagone d'évolution (1 cm de diamètre)</label>
         <div class="row">
@@ -168,50 +165,47 @@
         <button id="clear" class="secondary">Effacer tout</button>
       </div>
 
-      <div class="foot">Astuce : les dimensions et marges sont calculées en millimètres selon vos contraintes (bordure 2,5 mm, zone texte 30 mm de haut, compartiments 10×7 mm avec angle 6×3 mm).</div>
+      <div class="foot">Astuce : dimensions et marges calculées en millimètres (cadre 2,5 mm, zone texte 30 mm, compartiments 10×7 mm biseau 6×3 mm).</div>
     </div>
 
     <div class="preview">
-      <!-- Canvas plein format (300 DPI) mais réduit visuellement pour l’aperçu -->
-      <canvas id="card" width="744" height="1051"></canvas></canvas>
+      <canvas id="card" width="744" height="1051"></canvas>
     </div>
   </div>
 
   <script>
   // === Constantes physiques ===
-  const DPI = 300;                  // Export et rendu natif en 300 DPI
-  const MM = DPI / 25.4;            // px par millimètre
-  const CARD_W = Math.round(63 * MM);   // 63 mm → largeur
-  const CARD_H = Math.round(89 * MM);   // 89 mm → hauteur
-  const BORDER = 2.5 * MM;              // 2,5 mm cadre
-  const BOX_W = 10 * MM, BOX_H = 7 * MM; // Compartiments 10×7 mm
-  const NOTCH_SIDE = 6 * MM, NOTCH_TOP = 3 * MM; // biseau 6×3 mm
-  const BLUE_H = 30 * MM;               // Zone "bleue" (texte) : 30 mm de haut
+  const DPI = 300;                  // 300 DPI
+  const MM = DPI / 25.4;            // px/mm
+  const CARD_W = Math.round(63 * MM);
+  const CARD_H = Math.round(89 * MM);
+  const BORDER = 2.5 * MM;              // cadre 2,5 mm
+  const BOX_W = 10 * MM, BOX_H = 7 * MM; // compartiments 10×7 mm
+  const NOTCH_SIDE = 6 * MM, NOTCH_TOP = 3 * MM; // biseau 6×3 mm
+  const BLUE_H = 30 * MM;               // zone texte 30 mm
 
   // Couleurs
   const COLORS = {
     cadre: { gris: '#515859', noir: '#0D0D0D', invisible: null },
     zoneParRareté: {
-      1: '#93BF34',   // Commun
-      2: '#F2AE30',   // Peu Commune
-      3: '#F25430',   // Rare
-      4: '#F23030',   // Epic (opaque)
-      5: '#F26398',   // Légendaire (opaque)
-      6: '#04BF8A'    // Exclusif (opaque)
+      1: '#93BF34', 2: '#F2AE30', 3: '#F25430',
+      4: '#F23030', 5: '#F26398', 6: '#04BF8A'
     },
     coinsNoirs: '#0D0D0D'
   };
 
-  // Conversion points → pixels (canvas à DPI constants)
-  const pt = v => v * DPI / 72; // 1 pt = 1/72 in
+  // Icônes rareté
+  const ICON_MAP = {1:'images/C.png',2:'images/PC.png',3:'images/R.png',4:'images/EP.png',5:'images/L.png',6:'images/EX.png'};
+  const ICON_LABEL = {1:'C',2:'PC',3:'R',4:'EP',5:'L',6:'EX'}; // fallback
+  const rarityIcons = {}; for(const k in ICON_MAP){ const im=new Image(); im.src=ICON_MAP[k]; rarityIcons[k]=im; }
 
-  // Éléments DOM
-  const c = document.getElementById('card');
-  const ctx = c.getContext('2d');
-  c.width = CARD_W; c.height = CARD_H;
-
-  // Inputs
+  // Outils
+  const pt = v => v * DPI / 72;
   const $ = id => document.getElementById(id);
+
+  // DOM
+  const c = $('card'); const ctx = c.getContext('2d'); c.width=CARD_W; c.height=CARD_H;
+
   const inputs = {
     cadre: $('cadre'), rarete: $('rarete'), nom: $('nom'), pv: $('pv'), extension: $('extension'),
     illustrateur: $('illustrateur'), numero: $('numero'), description: $('description'),
@@ -220,391 +214,169 @@
     file: $('file'), zoom: $('zoom'), zoomVal: $('zoomVal'), export: $('export'), clear: $('clear'), resetImg: $('resetImg')
   };
 
-  // Icônes de rareté à afficher à côté du numéro
-  const ICON_MAP = { 1:'images/C.png', 2:'images/PC.png', 3:'images/R.png', 4:'images/EP.png', 5:'images/L.png', 6:'images/EX.png' };
-  const ICON_LABEL = { 1:'C', 2:'PC', 3:'R', 4:'EP', 5:'L', 6:'EX' };
-  const rarityIcons = {};
-  for(const k in ICON_MAP){ const im = new Image(); im.src = ICON_MAP[k]; rarityIcons[k] = im; }
-
-  // Image optionnelle pour l'hexagone
-  let hexImg = null;
-
-  // État image importée + déplacement/zoom
-  let img = null;      // HTMLImageElement
-  let imgPos = { x: CARD_W/2, y: CARD_H/2 }; // centre de l’image (en px carte)
-  let imgScale = 1;    // facteur de zoom
-  let dragging = false, dragStart = {x:0,y:0}, startPos={x:0,y:0};
+  // Image importée
+  let img=null; let imgPos={x:CARD_W/2,y:CARD_H/2}; let imgScale=1; let dragging=false, dragStart={x:0,y:0}, startPos={x:0,y:0};
+  let hexImg=null;
 
   function loadImage(file){
-    const reader = new FileReader();
-    reader.onload = e => {
-      const i = new Image();
-      i.onload = () => { img = i; imgScale = 1; imgPos = { x: CARD_W/2, y: CARD_H/2 }; draw(); };
-      i.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
+    const r = new FileReader();
+    r.onload = e => { const i=new Image(); i.onload=()=>{ img=i; imgScale=1; imgPos={x:CARD_W/2,y:CARD_H/2}; draw(); }; i.src=e.target.result; };
+    r.readAsDataURL(file);
   }
+  inputs.file.addEventListener('change', e => { if(e.target.files && e.target.files[0]) loadImage(e.target.files[0]); });
+  inputs.resetImg.addEventListener('click', () => { imgScale=1; imgPos={x:CARD_W/2,y:CARD_H/2}; draw(); });
 
-  inputs.file.addEventListener('change', e => {
-    if(e.target.files && e.target.files[0]) loadImage(e.target.files[0]);
-  });
-
-  inputs.resetImg.addEventListener('click', () => {
-    imgScale = 1; imgPos = { x: CARD_W/2, y: CARD_H/2 }; draw();
-  });
-
-  // Image hexagone
-  inputs.hexFile.addEventListener('change', e => {
+  inputs.hexFile.addEventListener('change', e=>{
     if(e.target.files && e.target.files[0]){
-      const R = new FileReader();
-      R.onload = ev => { const i = new Image(); i.onload = () => { hexImg = i; draw(); }; i.src = ev.target.result; };
+      const R=new FileReader();
+      R.onload=ev=>{ const i=new Image(); i.onload=()=>{ hexImg=i; draw(); }; i.src=ev.target.result; };
       R.readAsDataURL(e.target.files[0]);
     }
   });
-  });
 
-  // Drag
+  // Drag / Zoom
   c.addEventListener('pointerdown', e => {
-    const rect = c.getBoundingClientRect();
-    dragging = true;
-    dragStart = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-    // convertir coords écran → coords canvas (selon taille CSS)
-    const scale = c.width / rect.width;
-    dragStart.x *= scale; dragStart.y *= scale;
-    startPos = { ...imgPos };
-    c.setPointerCapture(e.pointerId);
+    const rect=c.getBoundingClientRect(); dragging=true; const s=c.width/rect.width;
+    dragStart={x:(e.clientX-rect.left)*s, y:(e.clientY-rect.top)*s}; startPos={...imgPos}; c.setPointerCapture(e.pointerId);
   });
   c.addEventListener('pointermove', e => {
     if(!dragging || !img) return;
-    const rect = c.getBoundingClientRect();
-    const scale = c.width / rect.width;
-    const cur = { x: (e.clientX - rect.left) * scale, y: (e.clientY - rect.top) * scale };
-    imgPos.x = startPos.x + (cur.x - dragStart.x);
-    imgPos.y = startPos.y + (cur.y - dragStart.y);
+    const rect=c.getBoundingClientRect(); const s=c.width/rect.width;
+    const cur={x:(e.clientX-rect.left)*s, y:(e.clientY-rect.top)*s};
+    imgPos.x = startPos.x + (cur.x - dragStart.x); imgPos.y = startPos.y + (cur.y - dragStart.y);
     draw();
   });
-  c.addEventListener('pointerup', e => { dragging = false; c.releasePointerCapture(e.pointerId); });
-
-  // Molette = zoom fin
+  c.addEventListener('pointerup', e => { dragging=false; c.releasePointerCapture(e.pointerId); });
   c.addEventListener('wheel', e => {
-    if(!img) return;
-    e.preventDefault();
-    const delta = -e.deltaY / 1000; // sens naturel
-    imgScale = Math.min(3, Math.max(0.2, imgScale * (1 + delta)));
-    inputs.zoom.value = imgScale.toFixed(2);
-    inputs.zoom.dispatchEvent(new Event('input'));
-  }, { passive:false });
+    if(!img) return; e.preventDefault();
+    const delta=-e.deltaY/1000; imgScale=Math.min(3, Math.max(0.2, imgScale * (1+delta)));
+    inputs.zoom.value=imgScale.toFixed(2); inputs.zoom.dispatchEvent(new Event('input'));
+  }, {passive:false});
+  inputs.zoom.addEventListener('input', ()=>{ imgScale=parseFloat(inputs.zoom.value); $('zoomVal').textContent=Math.round(imgScale*100)+'%'; draw(); });
 
-  inputs.zoom.addEventListener('input', () => {
-    imgScale = parseFloat(inputs.zoom.value);
-    inputs.zoomVal.textContent = Math.round(imgScale*100)+"%";
-    draw();
-  });
+  inputs.export.addEventListener('click', ()=>{ const a=document.createElement('a'); a.href=c.toDataURL('image/png'); a.download=`carte_tcg_${Date.now()}.png`; a.click(); });
+  inputs.clear.addEventListener('click', ()=>{ ['nom','pv','extension','illustrateur','numero','description','atk','atkspd','def','defspd','spd'].forEach(id=>$(id).value=''); inputs.rarete.value='1'; inputs.cadre.value='gris'; img=null; hexImg=null; draw(); });
 
-  // Boutons
-  inputs.export.addEventListener('click', () => {
-    const url = c.toDataURL('image/png');
-    const a = document.createElement('a');
-    a.href = url; a.download = `carte_tcg_${Date.now()}.png`;
-    a.click();
-  });
-  inputs.clear.addEventListener('click', () => {
-    ['nom','pv','extension','illustrateur','numero','description'].forEach(id => $(id).value='');
-    inputs.rarete.value='1'; inputs.cadre.value='gris'; img=null; draw();
-  });
+  // Redessiner à chaque modif
+  ['input','change'].forEach(evt => { Object.values(inputs).forEach(el => { if(el && el.tagName) el.addEventListener(evt, draw); }); });
 
-  // Redessin sur changement de paramètres
-  ['input','change'].forEach(evt => {
-    Object.values(inputs).forEach(el => { if(el && el.tagName){ el.addEventListener(evt, draw); } });
-  });
+  // UI preview aspect ratio 63:89
+  function setPreviewSize(){ const container=document.querySelector('.preview'); const maxW=Math.min(372,(container?.clientWidth||372)-20); const cssW=Math.max(240,maxW); c.style.width=cssW+'px'; c.style.height=(cssW*89/63)+'px'; }
+  window.addEventListener('resize', setPreviewSize);
 
-  function drawFrame(color){
-    if(!color) return; // cadre invisible
-    ctx.fillStyle = color;
-    // 4 côtés
-    ctx.fillRect(0,0,CARD_W,BORDER);                         // haut
-    ctx.fillRect(0,CARD_H-BORDER,CARD_W,BORDER);             // bas
-    ctx.fillRect(0,0,BORDER,CARD_H);                         // gauche
-    ctx.fillRect(CARD_W-BORDER,0,BORDER,CARD_H);             // droite
-  }
+  // Dessin éléments
+  function drawFrame(color){ if(!color) return; ctx.fillStyle=color; ctx.fillRect(0,0,CARD_W,BORDER); ctx.fillRect(0,CARD_H-BORDER,CARD_W,BORDER); ctx.fillRect(0,0,BORDER,CARD_H); ctx.fillRect(CARD_W-BORDER,0,BORDER,CARD_H); }
+  function drawHorizontalBar(color,y){ if(!color) return; ctx.fillStyle=color; ctx.fillRect(BORDER, y-BORDER, CARD_W-2*BORDER, BORDER); }
+  function luminance(hex){ if(!hex) return 1; const c=parseInt(hex.slice(1),16); const r=(c>>16)&255,g=(c>>8)&255,b=c&255; return 0.2126*(r/255)+0.7152*(g/255)+0.0722*(b/255); }
 
-  function drawHorizontalBar(color, y){
-    if(!color) return;
-    ctx.fillStyle = color;
-    ctx.fillRect(BORDER, y - BORDER, CARD_W - 2*BORDER, BORDER);
-  }
+  // Compartiments Option A : notch intérieur (gauche=haut-droit, droit=haut-gauche)
+  function compartmentLeft(x,y,w,h, notchX, notchY, color){ ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x+w-notchX, y); ctx.lineTo(x+w, y+notchY); ctx.lineTo(x+w, y+h); ctx.lineTo(x, y+h); ctx.closePath(); ctx.fillStyle=color; ctx.fill(); }
+  function compartmentRight(x,y,w,h, notchX, notchY, color){ ctx.beginPath(); ctx.moveTo(x+notchX, y); ctx.lineTo(x+w, y); ctx.lineTo(x+w, y+h); ctx.lineTo(x, y+h); ctx.lineTo(x, y+notchY); ctx.closePath(); ctx.fillStyle=color; ctx.fill(); }
 
-  function drawTopCornerCaps(){
-    const t = BORDER;
-    ctx.fillStyle = COLORS.coinsNoirs;
-    // coin gauche
-    ctx.fillRect(0,0, t*4, t); // bande horizontale
-    ctx.fillRect(0,0, t, t*4); // bande verticale
-    // coin droit
-    ctx.fillRect(CARD_W - t*4, 0, t*4, t);
-    ctx.fillRect(CARD_W - t, 0, t, t*4);
-  }
+  function drawTopCornerCaps(){ const t=BORDER; ctx.fillStyle=COLORS.coinsNoirs; ctx.fillRect(0,0,t*4,t); ctx.fillRect(0,0,t,t*4); ctx.fillRect(CARD_W-t*4,0,t*4,t); ctx.fillRect(CARD_W-t,0,t,t*4); }
 
-  // Dessine un hexagone plein (blanc) avec bord coloré, et optionnellement une image centrée à l'intérieur
-  function drawHexagonBadge(cx, cy, diameter, strokeColor, strokeMM, innerImage){
-    const r = diameter/2;
-    const pts = [];
-    for(let i=0;i<6;i++){
-      const ang = Math.PI/6 + i * Math.PI/3; // orientation à plat
-      pts.push({x: cx + r*Math.cos(ang), y: cy + r*Math.sin(ang)});
-    }
-    ctx.save();
-    ctx.beginPath();
-    ctx.moveTo(pts[0].x, pts[0].y);
-    for(let i=1;i<6;i++) ctx.lineTo(pts[i].x, pts[i].y);
-    ctx.closePath();
-    ctx.fillStyle = '#ffffff';
-    ctx.fill();
-    ctx.lineWidth = strokeMM;
-    ctx.strokeStyle = strokeColor;
-    ctx.stroke();
-
-    if(innerImage && innerImage.complete && innerImage.naturalWidth){
-      ctx.save();
-      ctx.clip();
-      const box = diameter * 0.8; // marge intérieure
-      ctx.drawImage(innerImage, cx - box/2, cy - box/2, box, box);
-      ctx.restore();
-    }
+  function drawHexagonBadge(cx,cy,diameter,strokeColor,strokeMM,innerImage){
+    const r=diameter/2, pts=[];
+    for(let i=0;i<6;i++){ const ang=Math.PI/6 + i*Math.PI/3; pts.push({x:cx+r*Math.cos(ang), y:cy+r*Math.sin(ang)}); }
+    ctx.save(); ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y); for(let i=1;i<6;i++) ctx.lineTo(pts[i].x,pts[i].y); ctx.closePath();
+    ctx.fillStyle='#fff'; ctx.fill(); ctx.lineWidth=strokeMM; ctx.strokeStyle=strokeColor; ctx.stroke();
+    if(innerImage && innerImage.complete && innerImage.naturalWidth){ ctx.save(); ctx.clip(); const box=diameter*0.8; ctx.drawImage(innerImage, cx-box/2, cy-box/2, box, box); ctx.restore(); }
     ctx.restore();
   }
 
-  function drawCompartmentLeft(x,y,w,h, notchX, notchY, color){
-    // Compartiment gauche avec biseau en HAUT-DROIT (intérieur)
-    ctx.beginPath();
-    ctx.moveTo(x, y);                       // haut-gauche
-    ctx.lineTo(x + w - notchX, y);          // haut jusqu'avant le biseau
-    ctx.lineTo(x + w, y + notchY);          // biseau vers le bas côté intérieur
-    ctx.lineTo(x + w, y + h);               // descendre bord droit
-    ctx.lineTo(x, y + h);                   // bas
-    ctx.closePath();
-    ctx.fillStyle = color;
-    ctx.fill();
-  }
-  function drawCompartmentRight(x,y,w,h, notchX, notchY, color){
-    // Compartiment droit avec biseau en HAUT-GAUCHE (intérieur)
-    ctx.beginPath();
-    ctx.moveTo(x + notchX, y);              // haut après biseau
-    ctx.lineTo(x + w, y);                   // haut jusqu'au coin droit
-    ctx.lineTo(x + w, y + h);               // descendre bord droit
-    ctx.lineTo(x, y + h);                   // bas
-    ctx.lineTo(x, y + notchY);              // remonter jusqu'au biseau
-    ctx.closePath();
-    ctx.fillStyle = color;
-    ctx.fill();
-  }
-
-  function wrapText(text, maxWidth, fontPx){
-    const words = (text||'').split(/\s+/);
-    const lines = [];
-    let line = '';
-    for(let w of words){
-      const test = line ? line + ' ' + w : w;
-      const metrics = ctx.measureText(test);
-      if(metrics.width > maxWidth && line){
-        lines.push(line);
-        line = w;
-      } else {
-        line = test;
-      }
-    }
+  function wrapText(text,maxWidth){
+    const words=(text||'').split(/\s+/); const lines=[]; let line='';
+    ctx.save();
+    for(const w of words){ const t=line?line+' '+w:w; const m=ctx.measureText(t); if(m.width>maxWidth && line){ lines.push(line); line=w; } else { line=t; } }
     if(line) lines.push(line);
-    // Gestion des sauts de ligne manuels \n
-    const out=[]; lines.join('\n').split('\n').forEach(l=>{ if(l!=='') out.push(l); else out.push('') });
-    return out;
+    ctx.restore();
+    return lines;
   }
 
   function draw(){
-    // Effacer
     ctx.clearRect(0,0,CARD_W,CARD_H);
+    // fond carte
+    ctx.fillStyle='#fff'; ctx.fillRect(0,0,CARD_W,CARD_H);
 
-    // Fond blanc de la carte
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0,0,CARD_W,CARD_H);
+    // image importée
+    if(img){ const s=Math.max(CARD_W/img.width, CARD_H/img.height)*imgScale; const w=img.width*s, h=img.height*s; ctx.drawImage(img, imgPos.x-w/2, imgPos.y-h/2, w,h); }
 
-    // Image importée (arrière-plan, couvrant la carte mais librement positionnable)
-    if(img){
-      // Calcul pour couvrir la carte en préservant le ratio
-      const scaleToCover = Math.max(CARD_W / img.width, CARD_H / img.height);
-      const scale = scaleToCover * imgScale;
-      const w = img.width * scale;
-      const h = img.height * scale;
-      const x = imgPos.x - w/2;
-      const y = imgPos.y - h/2;
-      ctx.drawImage(img, x, y, w, h);
-    }
+    // couleurs & zones
+    const r=parseInt(inputs.rarete.value,10); const cadreVal=inputs.cadre.value; const cadreColor=COLORS.cadre[cadreVal];
 
-    // Cadre
-    const cadreVal = inputs.cadre.value;                 // gris | noir | invisible
-    const cadreColor = COLORS.cadre[cadreVal];
+    // cadre
     drawFrame(cadreColor);
 
-    // Limites internes (zone utile)
-    const innerX = BORDER, innerY = BORDER;
-    const innerW = CARD_W - 2*BORDER, innerH = CARD_H - 2*BORDER;
+    // zone utile
+    const innerX=BORDER, innerY=BORDER, innerW=CARD_W-2*BORDER, innerH=CARD_H-2*BORDER;
 
-    // Compartiments (Extension et PV) collés en haut, à l'intérieur du cadre
-    const boxY = innerY + 0; // plaqué en haut
-    const leftBoxX  = innerX + 0;
-    const rightBoxX = innerX + innerW - BOX_W;
-    const compColor = (cadreColor ? cadreColor : '#0D0D0D');
-    drawCompartmentLeft(leftBoxX, boxY, BOX_W, BOX_H, NOTCH_SIDE, NOTCH_TOP, compColor);
-    drawCompartmentRight(rightBoxX, boxY, BOX_W, BOX_H, NOTCH_SIDE, NOTCH_TOP, compColor);
+    // compartiments (toujours visibles; si cadre invisible -> noirs)
+    const compColor = cadreColor ? cadreColor : '#0D0D0D';
+    const boxY = innerY, leftBoxX=innerX, rightBoxX=innerX+innerW-BOX_W;
+    compartmentLeft(leftBoxX, boxY, BOX_W, BOX_H, NOTCH_SIDE, NOTCH_TOP, compColor);
+    compartmentRight(rightBoxX, boxY, BOX_W, BOX_H, NOTCH_SIDE, NOTCH_TOP, compColor);
 
-    // Texte des compartiments (10 pt)
-    ctx.fillStyle = '#000';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = `${pt(10)}px sans-serif`;
-    ctx.fillText((inputs.extension.value||'').trim(), leftBoxX + BOX_W/2, boxY + BOX_H/2);
-    ctx.fillText((inputs.pv.value||'').trim(), rightBoxX + BOX_W/2, boxY + BOX_H/2);
+    // texte compartiments
+    const txtOnComp = luminance(compColor) < 0.4 ? '#fff' : '#000';
+    ctx.fillStyle=txtOnComp; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.font=`${pt(10)}px sans-serif`;
+    ctx.fillText((inputs.extension.value||'').trim(), leftBoxX+BOX_W/2, boxY+BOX_H/2);
+    ctx.fillText((inputs.pv.value||'').trim(),       rightBoxX+BOX_W/2, boxY+BOX_H/2);
 
-    // Zone texte ("bleue") collée en bas, pleine largeur intérieure, hauteur 30 mm
-    const zoneX = innerX;
-    const zoneW = innerW;
-    const zoneH = BLUE_H;
-    const zoneY = innerY + innerH - zoneH;
+    // coins "L" (r>=4) seulement si cadre visible
+    if(r>=4 && cadreColor){ drawTopCornerCaps(); }
 
-    // Hexagone d'évolution (en bas gauche de l'image)
-    if(inputs.hexOn && inputs.hexOn.checked){
-      const hexDiameter = 10 * MM; // 1 cm
-      const cx = innerX + (hexDiameter/2) + (1*MM);
-      const cy = zoneY - (hexDiameter/2) - (1*MM);
-      const strokeColor = (r<=2 ? '#515859' : '#0D0D0D');
-      drawHexagonBadge(cx, cy, hexDiameter, strokeColor, 1*MM, hexImg);
-    }
-
-    // Couleur selon rareté (opaque)
-    const r = parseInt(inputs.rarete.value, 10);
-    ctx.save();
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = COLORS.zoneParRareté[r] || '#93BF34';
-    ctx.fillRect(zoneX, zoneY, zoneW, zoneH);
-    ctx.restore();
-
-    // Barre horizontale du cadre (au-dessus de la zone)
+    // zone couleur (opaque)
+    const zoneX=innerX, zoneW=innerW, zoneH=BLUE_H, zoneY=innerY+innerH-zoneH;
+    ctx.fillStyle = COLORS.zoneParRareté[r] || '#93BF34'; ctx.fillRect(zoneX, zoneY, zoneW, zoneH);
     drawHorizontalBar(cadreColor, zoneY);
 
-    // Coins noirs supérieurs pour les raretés 4/5/6 (masqués si cadre invisible)
-    if(r >= 4 && cadreColor){ drawTopCornerCaps(); }
-
-    // Nom (14 pt) – en haut de la zone
-    const pad = 2 * MM; // marge interne
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillStyle = '#0D0D0D';
-    ctx.font = `700 ${pt(14)}px sans-serif`;
-    const nom = (inputs.nom.value || '').toUpperCase();
-    const nameY = zoneY + pad;
-    ctx.fillText(nom, zoneX + zoneW/2, nameY);
-
-    // Description (10 pt), 1 mm sous le nom (pas de centrage vertical)
-    const descTop = nameY + pt(14) + 1*MM; // 1 mm sous le nom
-    const maxWidth = zoneW - pad*2;
-
-    ctx.font = `${pt(10)}px sans-serif`;
-    ctx.fillStyle = '#0D0D0D';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-
-    const lines = wrapText(inputs.description.value || '', maxWidth, pt(10));
-    const lineHeight = pt(10) * 1.25;
-    let y = descTop;
-    for(const line of lines){
-      ctx.fillText(line, zoneX + zoneW/2, y);
-      y += lineHeight;
+    // hexagone bas-gauche
+    if(inputs.hexOn && inputs.hexOn.checked){
+      const hexD=10*MM; const cx=innerX+hexD/2+1*MM; const cy=zoneY-hexD/2-1*MM; const stroke=(r<=2?'#515859':'#0D0D0D');
+      drawHexagonBadge(cx,cy,hexD,stroke,1*MM,hexImg);
     }
 
-    // Statistiques (8 pt) sous la description
-    const statsTop = y + 1*MM; // 1 mm sous la description
-    const lhSmall = pt(8) * 1.25;
-    ctx.font = `${pt(8)}px sans-serif`;
-    ctx.fillStyle = '#0D0D0D';
+    // nom
+    const pad=2*MM; ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillStyle='#0D0D0D'; ctx.font=`700 ${pt(14)}px sans-serif`;
+    const nameY = zoneY + pad; ctx.fillText((inputs.nom.value||'').toUpperCase(), zoneX+zoneW/2, nameY);
 
-    // Colonne gauche : Attaque & Vit.Attaque (alignée à gauche)
-    ctx.textAlign = 'left';
-    ctx.fillText(`Attaque : ${ (inputs.atk.value||'').toString() }`, zoneX + pad, statsTop);
-    ctx.fillText(`Vit.Attaque : ${ (inputs.atkspd.value||'').toString() }`, zoneX + pad, statsTop + lhSmall);
+    // description (1 mm sous le nom)
+    ctx.font=`${pt(10)}px sans-serif`; ctx.fillStyle='#0D0D0D';
+    const descTop = nameY + pt(14) + 1*MM; const maxWidth = zoneW - pad*2; const lines = wrapText(inputs.description.value, maxWidth);
+    const lineH = pt(10) * 1.25; let y = descTop; for(const line of lines){ ctx.fillText(line, zoneX+zoneW/2, y); y += lineH; }
 
-    // Colonne droite : Défense & Vit.Défense (alignée à droite)
-    ctx.textAlign = 'right';
-    ctx.fillText(`Défense : ${ (inputs.def.value||'').toString() }`, zoneX + zoneW - pad, statsTop);
-    ctx.fillText(`Vit.Défense : ${ (inputs.defspd.value||'').toString() }`, zoneX + zoneW - pad, statsTop + lhSmall);
+    // stats
+    const statsTop = y + 1*MM; ctx.font=`${pt(8)}px sans-serif`; ctx.fillStyle='#0D0D0D';
+    ctx.textAlign='left';  ctx.fillText(`Attaque : ${ (inputs.atk.value||'') }`, zoneX+pad, statsTop); ctx.fillText(`Vit.Attaque : ${ (inputs.atkspd.value||'') }`, zoneX+pad, statsTop+pt(8)*1.25);
+    ctx.textAlign='right'; ctx.fillText(`Défense : ${ (inputs.def.value||'') }`, zoneX+zoneW-pad, statsTop); ctx.fillText(`Vit.Défense : ${ (inputs.defspd.value||'') }`, zoneX+zoneW-pad, statsTop+pt(8)*1.25);
 
-    // Mentions bas de carte (6 pt) à 1 mm des bords intérieur gauche/droite et du bas
-    const m = 1 * MM; // marge
-    ctx.font = `${pt(6)}px sans-serif`;
-    ctx.fillStyle = '#0D0D0D';
-    ctx.textBaseline = 'alphabetic';
-    ctx.textAlign = 'left';
-    const illu = (inputs.illustrateur.value||'').trim();
-    ctx.fillText(illu, BORDER + m, CARD_H - BORDER - m);
+    // bas : illustrateur, numéro + icône, vitesse centrée
+    const m=1*MM; ctx.textBaseline='alphabetic';
+    ctx.font=`${pt(6)}px sans-serif`; ctx.textAlign='left'; ctx.fillText((inputs.illustrateur.value||'').trim(), BORDER+m, CARD_H-BORDER-m);
 
-    ctx.textAlign = 'right';
-    const num = (inputs.numero.value||'').trim();
-
-    // Icône de rareté à côté du numéro
-    const iconSize = 7 * MM; // ~7 mm
-    const gapIcon = 1 * MM;
-    const icon = rarityIcons[r];
-    let numX = CARD_W - BORDER - m;
-    let iconDrawn = false;
+    // numéro + icône rareté à droite
+    ctx.textAlign='right';
+    const num=(inputs.numero.value||'').trim(); const icon=rarityIcons[r]; const iconSize=7*MM; const gap=1*MM;
+    let numX = CARD_W-BORDER-m;
     if(icon && icon.complete && icon.naturalWidth){
-      const ix = CARD_W - BORDER - m - iconSize;
-      const iy = CARD_H - BORDER - m - iconSize + pt(6)*0.25; // alignement optique
-      ctx.drawImage(icon, ix, iy, iconSize, iconSize);
-      numX = ix - gapIcon; // décale le numéro à gauche de l'icône
-      iconDrawn = true;
+      const ix=CARD_W-BORDER-m-iconSize; const iy=CARD_H-BORDER-m-iconSize + pt(6)*0.25;
+      ctx.drawImage(icon, ix, iy, iconSize, iconSize); numX = ix - gap;
+    }else{
+      const code=ICON_LABEL[r]; const ix=CARD_W-BORDER-m-iconSize; const iy=CARD_H-BORDER-m-iconSize + pt(6)*0.25;
+      ctx.save(); ctx.fillStyle='#fff'; ctx.fillRect(ix,iy,iconSize,iconSize); ctx.strokeStyle='#00000055'; ctx.lineWidth=1; ctx.strokeRect(ix,iy,iconSize,iconSize);
+      ctx.fillStyle='#0D0D0D'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.font=`bold ${pt(8)}px sans-serif`; ctx.fillText(code, ix+iconSize/2, iy+iconSize/2); ctx.restore();
+      numX = ix - gap;
     }
-    if(!iconDrawn){
-      // Fallback : petit carré avec le code
-      const code = ICON_LABEL[r];
-      if(code){
-        const ix = CARD_W - BORDER - m - iconSize;
-        const iy = CARD_H - BORDER - m - iconSize + pt(6)*0.25;
-        ctx.save();
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(ix, iy, iconSize, iconSize);
-        ctx.strokeStyle = '#00000055';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(ix, iy, iconSize, iconSize);
-        ctx.fillStyle = '#0D0D0D';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.font = `bold ${pt(8)}px sans-serif`;
-        ctx.fillText(code, ix + iconSize/2, iy + iconSize/2);
-        ctx.restore();
-        numX = ix - gapIcon;
-      }
-    }
-    ctx.textAlign = 'right';
-    ctx.fillText(num, numX, CARD_H - BORDER - m);
+    ctx.textAlign='right'; ctx.font=`${pt(6)}px sans-serif`; ctx.fillStyle='#0D0D0D'; ctx.fillText(num, numX, CARD_H-BORDER-m);
 
-    // Vitesse (8 pt, centré)
-    ctx.textAlign = 'center';
-    ctx.font = `${pt(8)}px sans-serif`;
-    const spd = (inputs.spd.value||'').toString();
-    if(spd){ ctx.fillText(`Vitesse : ${spd}`, CARD_W/2, CARD_H - BORDER - m); }
+    // vitesse centrée
+    const spd=(inputs.spd.value||''); if(spd){ ctx.textAlign='center'; ctx.font=`${pt(8)}px sans-serif`; ctx.fillText(`Vitesse : ${spd}`, CARD_W/2, CARD_H-BORDER-m); }
   }
 
-  // Ajuste l'aperçu pour garantir le bon ratio 63:89 quelle que soit la taille de la fenêtre
-  function setPreviewSize(){
-    const container = document.querySelector('.preview');
-    const maxW = Math.min(372, (container?.clientWidth||372) - 20);
-    const cssW = Math.max(240, maxW);
-    c.style.width  = cssW + 'px';
-    c.style.height = (cssW * 89 / 63) + 'px';
-  }
-  window.addEventListener('resize', () => { setPreviewSize(); });
+  function setPreviewSize(){ const container=document.querySelector('.preview'); const maxW=Math.min(372,(container?.clientWidth||372)-20); const cssW=Math.max(240,maxW); c.style.width=cssW+'px'; c.style.height=(cssW*89/63)+'px'; }
+  window.addEventListener('resize', setPreviewSize);
 
-  // Premier rendu
-  setPreviewSize();
-  draw();
+  setPreviewSize(); draw();
   </script>
 </body>
 </html>

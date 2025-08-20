@@ -41,7 +41,7 @@
         <div>
           <label for="cadre">Cadre</label>
           <select id="cadre">
-            <option value="gris">Gris (#515859)</option>
+            <option value="gris">Gris (#262626)</option>
             <option value="noir">Noir (#0D0D0D)</option>
             <option value="invisible">Invisible</option>
           </select>
@@ -176,7 +176,7 @@ const CARD_W=Math.round(63*MM), CARD_H=Math.round(89*MM);
 const BORDER=2.5*MM, BOX_W=10*MM, BOX_H=7*MM, NOTCH_SIDE=6*MM, NOTCH_TOP=3*MM, BLUE_H=30*MM;
 
 const COLORS={
-  cadre:{gris:'#515859', noir:'#0D0D0D', invisible:null},
+  cadre:{gris:'#262626', noir:'#0D0D0D', invisible:null},
   zone:{1:'#93BF34',2:'#F2AE30',3:'#F25430',4:'#F23030',5:'#F26398',6:'#04BF8A'},
   coins:'#0D0D0D'
 };
@@ -322,7 +322,7 @@ function draw(){
     if(!hexPos){ const d=10*MM; hexPos={x:innerX + d/2 + 1*MM, y: zoneY - d/2 - 1*MM}; }
     const d=10*MM, rr=d/2, pts=[]; for(let i=0;i<6;i++){ const ang=Math.PI/6 + i*Math.PI/3; pts.push({x:hexPos.x+rr*Math.cos(ang), y:hexPos.y+rr*Math.sin(ang)}); }
     ctx.save(); ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y); for(let i=1;i<6;i++) ctx.lineTo(pts[i].x,pts[i].y); ctx.closePath(); ctx.fillStyle='#fff'; ctx.fill();
-    ctx.lineWidth=1*MM; ctx.strokeStyle=(r<=2 ? (cadreTex.gris.complete? '#515859' : '#515859') : (cadreTex.noir.complete? '#0D0D0D' : '#0D0D0D')); ctx.stroke();
+    ctx.lineWidth=1*MM; ctx.strokeStyle=(r<=2 ? (cadreTex.gris.complete? '#262626' : '#262626') : (cadreTex.noir.complete? '#0D0D0D' : '#0D0D0D')); ctx.stroke();
     if(hexImg && hexImg.complete && hexImg.naturalWidth){ ctx.save(); ctx.clip(); const box=d*0.8*hexScale; const ix=hexPos.x-box/2+hexImgOffset.x, iy=hexPos.y-box/2+hexImgOffset.y; ctx.drawImage(hexImg, ix, iy, box, box); ctx.restore(); }
     ctx.restore();
   }

@@ -165,8 +165,8 @@
       <button id="clear" class="secondary">Effacer tout</button>
     </div>
 
-    <div class="foot">Icônes rareté: <code>images/C.png</code>, <code>PC.png</code>, <code>R.png</code>, <code>EP.png</code>, <code>L.png</code>, <code>EX.png</code>.  
-    Textures: <code>images/1.png</code>…<code>images/6.png</code>.</div>
+    <div class="foot">Icônes rareté : <code>images/C.png</code>, <code>PC.png</code>, <code>R.png</code>, <code>EP.png</code>, <code>L.png</code>, <code>EX.png</code>  
+    Textures zone : <code>images/1.png</code>…<code>images/6.png</code>.</div>
   </div>
 
   <div class="preview">
@@ -175,39 +175,36 @@
 </div>
 
 <script>
-/* ==== Constantes géométrie ==== */
+/* ====== Géométrie (mm → px @300DPI) ====== */
 const DPI=300, MM=DPI/25.4;
 const CARD_W=Math.round(63*MM), CARD_H=Math.round(89*MM);
 const BORDER=2.5*MM, BOX_W=10*MM, BOX_H=7*MM, NOTCH_SIDE=6*MM, NOTCH_TOP=3*MM, BLUE_H=30*MM;
 
-/* Couleurs */
+/* ====== Couleurs / textures ====== */
 const COLORS={
   cadre:{ noir:'#0D0D0D', invisible:null },
   zone:{1:'#93BF34',2:'#F2AE30',3:'#F25430',4:'#F23030',5:'#F26398',6:'#04BF8A'},
   coins:'#0D0D0D'
 };
-
-/* Textures de zone (optionnelles) */
 const zoneTex={};
 for(let i=1;i<=6;i++){ const im=new Image(); im.src='images/'+i+'.png'; im.onload=()=>draw(); zoneTex[i]=im; }
 
-/* Icônes de rareté — PRELOAD */
 const ICON_FILES={1:'C.png',2:'PC.png',3:'R.png',4:'EP.png',5:'L.png',6:'EX.png'};
 const rarityIcons={};
 Object.keys(ICON_FILES).forEach(k=>{ const im=new Image(); im.src='images/'+ICON_FILES[k]; im.onload=()=>draw(); rarityIcons[k]=im; });
 
-/* ==== Canvas ==== */
+/* ====== Canvas & helpers ====== */
 const $=id=>document.getElementById(id), pt=v=>v*DPI/72;
 const c=$('card'), ctx=c.getContext('2d'); c.width=CARD_W; c.height=CARD_H;
 function setPreviewSize(){ const container=document.querySelector('.preview'); const maxW=Math.min(372,(container?container.clientWidth:372)-20); const cssW=Math.max(240,maxW); c.style.width=cssW+'px'; c.style.height=(cssW*89/63)+'px'; }
 window.addEventListener('resize', setPreviewSize);
 
-/* État images */
+/* ====== État images ====== */
 let img=null, imgPos={x:CARD_W/2,y:CARD_H/2}, imgScale=1;
 let hexImg=null, hexScale=1, hexPos=null, hexImgOffset={x:0,y:0};
 let zoneScale=1;
 
-/* DOM */
+/* ====== DOM ====== */
 const inputs={
   cadre:$('cadre'), rarete:$('rarete'), nom:$('nom'), pv:$('pv'), extension:$('extension'),
   illustrateur:$('illustrateur'), numero:$('numero'), description:$('description'),
@@ -219,34 +216,37 @@ const inputs={
   zoneScale:$('zoneScale'), zoneScaleVal:$('zoneScaleVal')
 };
 
+/* ====== Chargements / resets ====== */
 function loadImage(file){ const r=new FileReader(); r.onload=e=>{ const i=new Image(); i.onload=()=>{ img=i; imgScale=1; imgPos={x:CARD_W/2,y:CARD_H/2}; draw(); }; i.src=e.target.result; }; r.readAsDataURL(file); }
 inputs.file.addEventListener('change', e=>{ if(e.target.files&&e.target.files[0]) loadImage(e.target.files[0]); });
 inputs.resetImg.addEventListener('click', ()=>{ imgScale=1; imgPos={x:CARD_W/2,y:CARD_H/2}; inputs.zoom.value='1'; inputs.zoomVal.textContent='100%'; draw(); });
 inputs.clearBg.addEventListener('click', ()=>{ img=null; inputs.file.value=''; imgScale=1; imgPos={x:CARD_W/2,y:CARD_H/2}; inputs.zoom.value='1'; inputs.zoomVal.textContent='100%'; draw(); });
 
-inputs.zoom.addEventListener('input', ()=>{ imgScale=parseFloat(inputs.zoom.value); inputs.zoomVal.textContent=Math.round(imgScale*100)+'%'; draw(); });
-inputs.zoneScale.addEventListener('input', ()=>{ zoneScale=parseFloat(inputs.zoneScale.value); inputs.zoneScaleVal.textContent=Math.round(zoneScale*100)+'%'; draw(); });
-
 inputs.hexFile.addEventListener('change', e=>{
   if(e.target.files&&e.target.files[0]){
     const R=new FileReader();
-    R.onload=ev=>{ const i=new Image(); i.onload=()=>{ hexImg=i; draw(); }; i.src=ev.target.result; };
+    R.onload=ev=>{ const i=new Image(); i.onload=()=>{ hexImg=i; hexImgOffset={x:0,y:0}; hexScale=1; inputs.hexZoom.value='1'; inputs.hexZoomVal.textContent='100%'; draw(); }; i.src=ev.target.result; };
     R.readAsDataURL(e.target.files[0]);
   }
 });
-inputs.hexZoom.addEventListener('input', ()=>{ hexScale=parseFloat(inputs.hexZoom.value); inputs.hexZoomVal.textContent=Math.round(hexScale*100)+'%'; draw(); });
 inputs.clearHex.addEventListener('click', ()=>{ hexImg=null; inputs.hexFile.value=''; hexScale=1; hexImgOffset={x:0,y:0}; inputs.hexZoom.value='1'; inputs.hexZoomVal.textContent='100%'; draw(); });
 
-/* Drag/zoom ciblés */
+/* ====== Sliders ====== */
+inputs.zoom.addEventListener('input', ()=>{ imgScale=parseFloat(inputs.zoom.value); inputs.zoomVal.textContent=Math.round(imgScale*100)+'%'; draw(); });
+inputs.zoneScale.addEventListener('input', ()=>{ zoneScale=parseFloat(inputs.zoneScale.value); inputs.zoneScaleVal.textContent=Math.round(zoneScale*100)+'%'; draw(); });
+inputs.hexZoom.addEventListener('input', ()=>{ hexScale=parseFloat(inputs.hexZoom.value); inputs.hexZoomVal.textContent=Math.round(hexScale*100)+'%'; draw(); });
+
+/* ====== Drag / Zoom ciblés ====== */
 let dragging=false, dragStart={x:0,y:0}, startPos={x:0,y:0}, startHexOffset={x:0,y:0}, dragTarget='mainimg';
 c.addEventListener('pointerdown', e=>{
   const rect=c.getBoundingClientRect(); const s=c.width/rect.width; const px=(e.clientX-rect.left)*s, py=(e.clientY-rect.top)*s;
   dragging=true; dragStart={x:px,y:py}; startPos={...imgPos}; startHexOffset={...hexImgOffset};
   const innerX=BORDER, innerY=BORDER, innerW=CARD_W-2*BORDER, innerH=CARD_H-2*BORDER; const zoneY=innerY+innerH-BLUE_H;
   if(!hexPos){ const d=10*MM; hexPos={x:innerX+d/2+1*MM, y:zoneY-d/2-1*MM}; }
-  let inside=false; if(inputs.hexOn.checked){ const r=(10*MM)/2; const dx=px-hexPos.x, dy=py-hexPos.y; inside=(dx*dx+dy*dy)<=r*r; }
+  let inside=false;
+  if(inputs.hexOn.checked){ const r=(10*MM)/2; const dx=px-hexPos.x, dy=py-hexPos.y; inside=(dx*dx+dy*dy)<=r*r; }
   dragTarget = inside ? 'heximg' : 'mainimg';
-  c.setPointerCapture(e.pointerId);
+  c.setPointerCapture?.(e.pointerId);
 });
 c.addEventListener('pointermove', e=>{
   if(!dragging) return;
@@ -267,19 +267,17 @@ c.addEventListener('wheel', e=>{
   draw();
 },{passive:false});
 
-/* ================= Helpers cadre (anti-jours) ================= */
+/* ====== Anti-“jours” (fentes) ====== */
 function fillCrispRect(x, y, w, h){
-  const ax = Math.floor(x);
-  const ay = Math.floor(y);
-  const aw = Math.ceil(x + w) - ax;
-  const ah = Math.ceil(y + h) - ay;
+  const ax = Math.floor(x), ay = Math.floor(y);
+  const aw = Math.ceil(x + w) - ax, ah = Math.ceil(y + h) - ay;
   ctx.fillRect(ax, ay, aw, ah);
 }
 function drawFrame(style){
-  if(!style) return; // cadre invisible -> on peindra le fond blanc ailleurs
+  if(!style) return;
   ctx.save();
   ctx.fillStyle = style;
-  ctx.fillRect(0, 0, CARD_W, CARD_H); // aucun joint
+  ctx.fillRect(0, 0, CARD_W, CARD_H);
   ctx.fillStyle = '#fff';
   fillCrispRect(BORDER, BORDER, CARD_W - 2*BORDER, CARD_H - 2*BORDER);
   ctx.restore();
@@ -316,23 +314,22 @@ function drawTopCornerCaps(){
   fillCrispRect(0,0,t*4,t); fillCrispRect(0,0,t,t*4);
   fillCrispRect(CARD_W-t*4,0,t*4,t); fillCrispRect(CARD_W-t,0,t,t*4);
 }
-/* Zone texture (cover, ancrée bas) */
 function drawZoneTextureClipped(img,x,y,w,h,alpha,scale){
   ctx.save(); ctx.beginPath(); ctx.rect(x,y,w,h); ctx.clip(); ctx.globalAlpha = alpha;
   if(img && img.complete && img.naturalWidth){
     const s = Math.max(w/img.width, h/img.height) * (scale||1);
     const dw = img.width*s, dh = img.height*s;
-    const dx = x + (w - dw)/2, dy = y + h - dh; // ancré en bas
+    const dx = x + (w - dw)/2, dy = y + h - dh; // ancrée bas
     ctx.drawImage(img, dx, dy, dw, dh);
   } else { ctx.fillStyle='#ccc'; ctx.fillRect(x,y,w,h); }
   ctx.restore();
 }
 
-/* ================== Rendu principal ================== */
+/* ====== Rendu principal ====== */
 function draw(){
   ctx.clearRect(0,0,CARD_W,CARD_H);
 
-  // Rareté & style de cadre
+  // Rareté & style du cadre
   const r = parseInt(inputs.rarete.value,10);
   const userCadre = inputs.cadre.value;
   const cadreSel  = (r<=3) ? 'noir' : userCadre; // 1–3 forcé noir
@@ -340,29 +337,30 @@ function draw(){
   if(r<=3 && inputs.cadre.value!=='noir') inputs.cadre.value='noir';
   const cadreStyle = (cadreSel==='noir') ? '#0D0D0D' : null;
 
-  // Fond + cadre
+  // Cadre / fond
   if(cadreStyle){ drawFrame(cadreStyle); }
-  else { ctx.fillStyle='#fff'; ctx.fillRect(0,0,CARD_W,CARD_H); } // cadre invisible -> fond blanc
+  else { ctx.fillStyle='#fff'; ctx.fillRect(0,0,CARD_W,CARD_H); } // cadre invisible
 
   // Dimensions internes
   const innerX=BORDER, innerY=BORDER, innerW=CARD_W-2*BORDER, innerH=CARD_H-2*BORDER;
   const zoneH=BLUE_H, zoneY=innerY+innerH-zoneH;
 
-  // Image principale CLIPPÉE à l’intérieur de la carte
+  // Image principale CLIPPÉE à l’intérieur
   if(img){
-    ctx.save();
-    ctx.beginPath(); ctx.rect(innerX, innerY, innerW, innerH); ctx.clip();
+    ctx.save(); ctx.beginPath(); ctx.rect(innerX, innerY, innerW, innerH); ctx.clip();
     const cover=Math.max(CARD_W/img.width, CARD_H/img.height);
     const s=cover*imgScale; const w=img.width*s, h=img.height*s;
     ctx.drawImage(img, imgPos.x-w/2, imgPos.y-h/2, w, h);
     ctx.restore();
   }
 
-  // Compartiments (texte blanc)
+  // Compartiments (noirs si cadre invisible)
   const compStyle = (cadreStyle || '#0D0D0D');
   const boxY=innerY, leftBoxX=innerX, rightBoxX=innerX+innerW-BOX_W;
   compartmentLeft(leftBoxX, boxY, BOX_W, BOX_H, NOTCH_SIDE, NOTCH_TOP, compStyle);
   compartmentRight(rightBoxX, boxY, BOX_W, BOX_H, NOTCH_SIDE, NOTCH_TOP, compStyle);
+
+  // Libellés (blanc)
   ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.font=`${pt(10)}px sans-serif`;
   ctx.fillText((inputs.extension.value||'').trim(), leftBoxX+BOX_W/2, boxY+BOX_H/2);
   ctx.fillText((inputs.pv.value||'').trim(),       rightBoxX+BOX_W/2, boxY+BOX_H/2);
@@ -370,20 +368,17 @@ function draw(){
   // Coins "L" (r>=4 et cadre visible)
   if(r>=4 && cadreSel!=='invisible'){ drawTopCornerCaps(); }
 
-  // Zone de rareté
+  // Zone de rareté (texture + alpha 4–6)
   const alpha = (r>=4 ? 0.85 : 1);
   const zImg = zoneTex[r];
   if(zImg && zImg.complete && zImg.naturalWidth){
     drawZoneTextureClipped(zImg, innerX, zoneY, innerW, zoneH, alpha, zoneScale);
-  } else {
-    ctx.save(); ctx.globalAlpha=alpha; ctx.fillStyle=COLORS.zone[r];
-    fillCrispRect(innerX, zoneY, innerW, zoneH); ctx.restore();
-  }
+  } else { ctx.save(); ctx.globalAlpha=alpha; ctx.fillStyle=COLORS.zone[r]; fillCrispRect(innerX, zoneY, innerW, zoneH); ctx.restore(); }
 
-  // Barre horizontale si cadre visible
+  // Barre horizontale (si cadre visible)
   if(cadreSel!=='invisible'){ drawHorizontalBar('#0D0D0D', zoneY); }
 
-  // Hexagone (noir) + image interne
+  // Hexagone (toujours noir) + image interne – affichage conditionnel
   if(inputs.hexOn.checked){
     if(!hexPos){ const d=10*MM; hexPos={x:innerX + d/2 + 1*MM, y: zoneY - d/2 - 1*MM}; }
     const d=10*MM, rr=d/2, pts=[];
@@ -398,16 +393,16 @@ function draw(){
     ctx.restore();
   }
 
-  /* ======== TEXTES – STATS FIXES ======== */
+  /* ====== TEXTES ====== */
   const pad = 2*MM;
 
-  // Titre
+  // Nom
   const titleY = zoneY + pad;
   ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillStyle='#0D0D0D';
   ctx.font = `700 ${pt(14)}px sans-serif`;
   ctx.fillText((inputs.nom.value || '').toUpperCase(), innerX + innerW/2, titleY);
 
-  // Description (2 lignes max)
+  // Description (2 lignes max), 1 mm sous le nom
   const descTop = titleY + pt(14) + 1*MM;
   ctx.font = `${pt(10)}px sans-serif`;
   const maxW = innerW - pad*2;
@@ -437,7 +432,7 @@ function draw(){
   ctx.fillText(`Défense : ${(inputs.def.value || '')}`,        innerX + innerW - pad, statsTop);
   ctx.fillText(`Vit.Défense : ${(inputs.defspd.value || '')}`, innerX + innerW - pad, statsTop + pt(8) * 1.25);
 
-  // Bas : illu / icône / numéro / vitesse
+  // Bas : illustrateur / icône de rareté / numéro / vitesse
   const m=1*MM; ctx.textBaseline='alphabetic';
   ctx.textAlign='left'; ctx.font=`${pt(6)}px sans-serif`;
   ctx.fillText((inputs.illustrateur.value||'').trim(), BORDER+m, CARD_H-BORDER-m);
@@ -459,7 +454,13 @@ function draw(){
   if(spd){ ctx.textAlign='center'; ctx.font=`${pt(8)}px sans-serif`; ctx.fillText(`Vitesse : ${spd}`, CARD_W/2, CARD_H-BORDER-m); }
 }
 
-/* Boot */
+/* ====== Enregistre tous les contrôles pour redessiner instantanément ====== */
+['input','change'].forEach(evt=>{
+  ['cadre','rarete','nom','pv','extension','illustrateur','numero','description','atk','atkspd','def','defspd','spd','hexOn']
+    .forEach(id=>$(id).addEventListener(evt, draw));
+});
+
+/* ====== Boot ====== */
 function boot(){ setPreviewSize(); draw(); }
 if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', boot); } else { boot(); }
 </script>

@@ -175,7 +175,7 @@
 </div>
 
 <script>
-/* ====== Géométrie (mm → px @300DPI) ====== */
+/* ====== Géométrie ====== */
 const DPI=300, MM=DPI/25.4;
 const CARD_W=Math.round(63*MM), CARD_H=Math.round(89*MM);
 const BORDER=2.5*MM, BOX_W=10*MM, BOX_H=7*MM, NOTCH_SIDE=6*MM, NOTCH_TOP=3*MM, BLUE_H=30*MM;
@@ -193,13 +193,13 @@ const ICON_FILES={1:'C.png',2:'PC.png',3:'R.png',4:'EP.png',5:'L.png',6:'EX.png'
 const rarityIcons={};
 Object.keys(ICON_FILES).forEach(k=>{ const im=new Image(); im.src='images/'+ICON_FILES[k]; im.onload=()=>draw(); rarityIcons[k]=im; });
 
-/* ====== Canvas & helpers ====== */
+/* ====== Canvas ====== */
 const $=id=>document.getElementById(id), pt=v=>v*DPI/72;
 const c=$('card'), ctx=c.getContext('2d'); c.width=CARD_W; c.height=CARD_H;
 function setPreviewSize(){ const container=document.querySelector('.preview'); const maxW=Math.min(372,(container?container.clientWidth:372)-20); const cssW=Math.max(240,maxW); c.style.width=cssW+'px'; c.style.height=(cssW*89/63)+'px'; }
 window.addEventListener('resize', setPreviewSize);
 
-/* ====== État images ====== */
+/* ====== État ====== */
 let img=null, imgPos={x:CARD_W/2,y:CARD_H/2}, imgScale=1;
 let hexImg=null, hexScale=1, hexPos=null, hexImgOffset={x:0,y:0};
 let zoneScale=1;
@@ -267,7 +267,7 @@ c.addEventListener('wheel', e=>{
   draw();
 },{passive:false});
 
-/* ====== Anti-“jours” (fentes) ====== */
+/* ====== Anti-“jours” ====== */
 function fillCrispRect(x, y, w, h){
   const ax = Math.floor(x), ay = Math.floor(y);
   const aw = Math.ceil(x + w) - ax, ah = Math.ceil(y + h) - ay;
@@ -339,19 +339,26 @@ function draw(){
 
   // Cadre / fond
   if(cadreStyle){ drawFrame(cadreStyle); }
-  else { ctx.fillStyle='#fff'; ctx.fillRect(0,0,CARD_W,CARD_H); } // cadre invisible
+  else { ctx.fillStyle='#fff'; ctx.fillRect(0,0,CARD_W,CARD_H); } // fond blanc de base (recouvert par l'image)
 
   // Dimensions internes
   const innerX=BORDER, innerY=BORDER, innerW=CARD_W-2*BORDER, innerH=CARD_H-2*BORDER;
   const zoneH=BLUE_H, zoneY=innerY+innerH-zoneH;
 
-  // Image principale CLIPPÉE à l’intérieur
+  // Image principale
   if(img){
-    ctx.save(); ctx.beginPath(); ctx.rect(innerX, innerY, innerW, innerH); ctx.clip();
     const cover=Math.max(CARD_W/img.width, CARD_H/img.height);
     const s=cover*imgScale; const w=img.width*s, h=img.height*s;
-    ctx.drawImage(img, imgPos.x-w/2, imgPos.y-h/2, w, h);
-    ctx.restore();
+
+    if(cadreStyle){
+      // Cadre visible -> image CLIPPÉE à l'intérieur
+      ctx.save(); ctx.beginPath(); ctx.rect(innerX, innerY, innerW, innerH); ctx.clip();
+      ctx.drawImage(img, imgPos.x-w/2, imgPos.y-h/2, w, h);
+      ctx.restore();
+    } else {
+      // Cadre invisible -> image SUR TOUTE LA CARTE (pas de clipping)
+      ctx.drawImage(img, imgPos.x-w/2, imgPos.y-h/2, w, h);
+    }
   }
 
   // Compartiments (noirs si cadre invisible)
@@ -368,7 +375,7 @@ function draw(){
   // Coins "L" (r>=4 et cadre visible)
   if(r>=4 && cadreSel!=='invisible'){ drawTopCornerCaps(); }
 
-  // Zone de rareté (texture + alpha 4–6)
+  // Zone rareté
   const alpha = (r>=4 ? 0.85 : 1);
   const zImg = zoneTex[r];
   if(zImg && zImg.complete && zImg.naturalWidth){
@@ -378,7 +385,7 @@ function draw(){
   // Barre horizontale (si cadre visible)
   if(cadreSel!=='invisible'){ drawHorizontalBar('#0D0D0D', zoneY); }
 
-  // Hexagone (toujours noir) + image interne – affichage conditionnel
+  // Hexagone (toujours noir) + image interne – si coché
   if(inputs.hexOn.checked){
     if(!hexPos){ const d=10*MM; hexPos={x:innerX + d/2 + 1*MM, y: zoneY - d/2 - 1*MM}; }
     const d=10*MM, rr=d/2, pts=[];
@@ -432,7 +439,7 @@ function draw(){
   ctx.fillText(`Défense : ${(inputs.def.value || '')}`,        innerX + innerW - pad, statsTop);
   ctx.fillText(`Vit.Défense : ${(inputs.defspd.value || '')}`, innerX + innerW - pad, statsTop + pt(8) * 1.25);
 
-  // Bas : illustrateur / icône de rareté / numéro / vitesse
+  // Bas : illustrateur / icône / numéro / vitesse
   const m=1*MM; ctx.textBaseline='alphabetic';
   ctx.textAlign='left'; ctx.font=`${pt(6)}px sans-serif`;
   ctx.fillText((inputs.illustrateur.value||'').trim(), BORDER+m, CARD_H-BORDER-m);
@@ -454,13 +461,13 @@ function draw(){
   if(spd){ ctx.textAlign='center'; ctx.font=`${pt(8)}px sans-serif`; ctx.fillText(`Vitesse : ${spd}`, CARD_W/2, CARD_H-BORDER-m); }
 }
 
-/* ====== Enregistre tous les contrôles pour redessiner instantanément ====== */
+/* Redessiner instantanément quand on change un champ */
 ['input','change'].forEach(evt=>{
   ['cadre','rarete','nom','pv','extension','illustrateur','numero','description','atk','atkspd','def','defspd','spd','hexOn']
     .forEach(id=>$(id).addEventListener(evt, draw));
 });
 
-/* ====== Boot ====== */
+/* Boot */
 function boot(){ setPreviewSize(); draw(); }
 if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', boot); } else { boot(); }
 </script>

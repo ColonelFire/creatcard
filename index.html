@@ -278,44 +278,27 @@
     }
   });
 
-  // Drag
-  c.addEventListener('pointerdown',e=>{
-    const rect=c.getBoundingClientRect(); const s=c.width/rect.width;
-    dragging=true; dragTarget = (inputs.moveTarget ? inputs.moveTarget.value : 'image');
-    dragStart={x:(e.clientX-rect.left)*s, y:(e.clientY-rect.top)*s};
-    startPos={...imgPos};
-    startHexPos={...(hexPos||{x:CARD_W*0.2,y:CARD_H*0.6})};
-    c.setPointerCapture(e.pointerId);
-  }); const s=c.width/rect.width;
-    dragging=true;
-    dragStart={x:(e.clientX-rect.left)*s, y:(e.clientY-rect.top)*s};
-    startPos={...imgPos};
+  // Drag & déplacement
+  c.addEventListener('pointerdown', e => {
+    const rect = c.getBoundingClientRect(); const s = c.width / rect.width;
+    dragging = true; dragTarget = (inputs.moveTarget ? inputs.moveTarget.value : 'image');
+    dragStart = { x:(e.clientX-rect.left)*s, y:(e.clientY-rect.top)*s };
+    startPos   = { ...imgPos };
+    startHexPos= { ...(hexPos || { x: CARD_W*0.2, y: CARD_H*0.6 }) };
     c.setPointerCapture(e.pointerId);
   });
-    dragging = true;
-    dragStart = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-    // convertir coords écran → coords canvas (selon taille CSS)
-    const scale = c.width / rect.width;
-    dragStart.x *= scale; dragStart.y *= scale;
-    startPos = { ...imgPos };
-    c.setPointerCapture(e.pointerId);
-  });
-  c.addEventListener('pointermove',e=>{
+  c.addEventListener('pointermove', e => {
     if(!dragging) return; const rect=c.getBoundingClientRect(); const s=c.width/rect.width;
-    const cur={x:(e.clientX-rect.left)*s, y:(e.clientY-rect.top)*s};
+    const cur = { x:(e.clientX-rect.left)*s, y:(e.clientY-rect.top)*s };
     if(dragTarget==='hex'){
-      if(!hexPos) hexPos = {x:CARD_W*0.2, y:CARD_H*0.6};
+      if(!hexPos) hexPos = { x: CARD_W*0.2, y: CARD_H*0.6 };
       hexPos.x = startHexPos.x + (cur.x - dragStart.x);
       hexPos.y = startHexPos.y + (cur.y - dragStart.y);
     } else {
-      if(!img) return; imgPos.x = startPos.x + (cur.x - dragStart.x); imgPos.y = startPos.y + (cur.y - dragStart.y);
+      if(!img) return;
+      imgPos.x = startPos.x + (cur.x - dragStart.x);
+      imgPos.y = startPos.y + (cur.y - dragStart.y);
     }
-    draw();
-  });
-    const scale = c.width / rect.width;
-    const cur = { x: (e.clientX - rect.left) * scale, y: (e.clientY - rect.top) * scale };
-    imgPos.x = startPos.x + (cur.x - dragStart.x);
-    imgPos.y = startPos.y + (cur.y - dragStart.y);
     draw();
   });
   c.addEventListener('pointerup', e => { dragging = false; c.releasePointerCapture(e.pointerId); });
@@ -338,9 +321,7 @@
 
   inputs.zoom.addEventListener('input',()=>{ imgScale=parseFloat(inputs.zoom.value); if(inputs.zoomVal) inputs.zoomVal.textContent=Math.round(imgScale*100)+'%'; draw(); });
   if(inputs.hexZoom){ inputs.hexZoom.addEventListener('input', ()=>{ hexScale=parseFloat(inputs.hexZoom.value); if(inputs.hexZoomVal) inputs.hexZoomVal.textContent=Math.round(hexScale*100)+'%'; draw(); }); }
-    inputs.zoomVal.textContent = Math.round(imgScale*100)+"%";
-    draw();
-  });
+
 
   // Boutons
   inputs.export.addEventListener('click', () => {

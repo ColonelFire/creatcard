@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Générateur TCG – stats fixes</title>
+<title>Générateur TCG – stats fixes + effacer images</title>
 <style>
   :root{ --bg:#8C8C8C; --ui:#0b3890; --ui2:#0f44a9; --text:#ECF2FF; --shadow: rgba(0,0,0,.35); }
   *{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,Helvetica,sans-serif}
@@ -123,9 +123,12 @@
 
     <div class="group">
       <label>Hexagone d'évolution (1 cm, image interne)</label>
-      <div class="row">
-        <div><label><input id="hexOn" type="checkbox" checked> Afficher l'hexagone</label></div>
-        <div><input id="hexFile" type="file" accept="image/*"></div>
+      <div class="btns">
+        <label style="display:flex;align-items:center;gap:6px;margin-right:auto;">
+          <input id="hexOn" type="checkbox" checked> Afficher l'hexagone
+        </label>
+        <input id="hexFile" type="file" accept="image/*">
+        <button id="clearHex" class="secondary">Effacer image (hexagone)</button>
       </div>
       <div style="margin-top:8px">
         <label for="hexZoom">Hex : Zoom</label>
@@ -138,6 +141,7 @@
       <div class="btns">
         <input type="file" id="file" accept="image/*" />
         <button id="resetImg" class="secondary">Réinitialiser l’image</button>
+        <button id="clearBg" class="secondary">Effacer image (arrière-plan)</button>
       </div>
       <div class="row" style="align-items:center;margin-top:8px">
         <div>
@@ -161,7 +165,7 @@
     </div>
 
     <div class="foot">Icônes rareté: <code>images/C.png</code>, <code>PC.png</code>, <code>R.png</code>, <code>EP.png</code>, <code>L.png</code>, <code>EX.png</code>.  
-    Textures de rareté: <code>images/1.png</code>…<code>images/6.png</code>.</div>
+    Textures: <code>images/1.png</code>…<code>images/6.png</code>.</div>
   </div>
 
   <div class="preview">
@@ -208,18 +212,24 @@ const inputs={
   illustrateur:$('illustrateur'), numero:$('numero'), description:$('description'),
   atk:$('atk'), atkspd:$('atkspd'), def:$('def'), defspd:$('defspd'), spd:$('spd'),
   file:$('file'), zoom:$('zoom'), zoomVal:$('zoomVal'), export:$('export'), clear:$('clear'), resetImg:$('resetImg'),
+  clearBg:$('clearBg'),
   hexOn:$('hexOn'), hexFile:$('hexFile'), hexZoom:$('hexZoom'), hexZoomVal:$('hexZoomVal'),
+  clearHex:$('clearHex'),
   zoneScale:$('zoneScale'), zoneScaleVal:$('zoneScaleVal')
 };
 
 function loadImage(file){ const r=new FileReader(); r.onload=e=>{ const i=new Image(); i.onload=()=>{ img=i; imgScale=1; imgPos={x:CARD_W/2,y:CARD_H/2}; draw(); }; i.src=e.target.result; }; r.readAsDataURL(file); }
 inputs.file.addEventListener('change', e=>{ if(e.target.files&&e.target.files[0]) loadImage(e.target.files[0]); });
-inputs.resetImg.addEventListener('click', ()=>{ imgScale=1; imgPos={x:CARD_W/2,y:CARD_H/2}; draw(); });
+
+inputs.resetImg.addEventListener('click', ()=>{ imgScale=1; imgPos={x:CARD_W/2,y:CARD_H/2}; inputs.zoom.value='1'; inputs.zoomVal.textContent='100%'; draw(); });
+inputs.clearBg.addEventListener('click', ()=>{ img=null; inputs.file.value=''; imgScale=1; imgPos={x:CARD_W/2,y:CARD_H/2}; inputs.zoom.value='1'; inputs.zoomVal.textContent='100%'; draw(); });
+
 inputs.zoom.addEventListener('input', ()=>{ imgScale=parseFloat(inputs.zoom.value); inputs.zoomVal.textContent=Math.round(imgScale*100)+'%'; draw(); });
 inputs.zoneScale.addEventListener('input', ()=>{ zoneScale=parseFloat(inputs.zoneScale.value); inputs.zoneScaleVal.textContent=Math.round(zoneScale*100)+'%'; draw(); });
 
 inputs.hexFile.addEventListener('change', e=>{ if(e.target.files&&e.target.files[0]){ const R=new FileReader(); R.onload=ev=>{ const i=new Image(); i.onload=()=>{ hexImg=i; draw(); }; i.src=ev.target.result; }; R.readAsDataURL(e.target.files[0]); } });
 inputs.hexZoom.addEventListener('input', ()=>{ hexScale=parseFloat(inputs.hexZoom.value); inputs.hexZoomVal.textContent=Math.round(hexScale*100)+'%'; draw(); });
+inputs.clearHex.addEventListener('click', ()=>{ hexImg=null; inputs.hexFile.value=''; hexScale=1; hexImgOffset={x:0,y:0}; inputs.hexZoom.value='1'; inputs.hexZoomVal.textContent='100%'; draw(); });
 
 /* Drag/zoom ciblés */
 let dragging=false, dragStart={x:0,y:0}, startPos={x:0,y:0}, startHexOffset={x:0,y:0}, dragTarget='mainimg';
@@ -253,8 +263,11 @@ inputs.export.addEventListener('click', ()=>{ const a=document.createElement('a'
 inputs.clear.addEventListener('click', ()=>{
   ['nom','pv','extension','illustrateur','numero','description','atk','atkspd','def','defspd','spd'].forEach(id=>$(id).value='');
   inputs.rarete.value='1'; inputs.cadre.value='noir';
-  img=null; hexImg=null; hexScale=1; hexImgOffset={x:0,y:0}; zoneScale=1;
-  inputs.zoneScale.value='1'; inputs.zoneScaleVal.textContent='100%';
+  img=null; inputs.file.value=''; imgScale=1; imgPos={x:CARD_W/2,y:CARD_H/2};
+  hexImg=null; inputs.hexFile.value=''; hexScale=1; hexImgOffset={x:0,y:0};
+  zoneScale=1; inputs.zoneScale.value='1'; inputs.zoneScaleVal.textContent='100%';
+  inputs.zoom.value='1'; inputs.zoomVal.textContent='100%';
+  inputs.hexZoom.value='1'; inputs.hexZoomVal.textContent='100%';
   draw();
 });
 ['input','change'].forEach(evt=>{
@@ -334,10 +347,9 @@ function draw(){
     ctx.restore();
   }
 
-  /* ======== TEXTES – STATS À NIVEAU FIXE ======== */
+  /* ======== TEXTES – STATS FIXES ======== */
   const pad = 2*MM;
 
-  // 1) Titre (en haut de la zone)
   const titleY = zoneY + pad;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
@@ -345,7 +357,6 @@ function draw(){
   ctx.font = `700 ${pt(14)}px sans-serif`;
   ctx.fillText((inputs.nom.value || '').toUpperCase(), innerX + innerW/2, titleY);
 
-  // 2) Description (2 lignes max + ellipsis)
   const descTop = titleY + pt(14) + 1*MM;
   ctx.font = `${pt(10)}px sans-serif`;
   const maxW = innerW - pad*2;
@@ -365,7 +376,6 @@ function draw(){
     ctx.fillText(txt, innerX + innerW/2, descTop + i * pt(10) * 1.25);
   }
 
-  // 3) Stats : position FIXE sous ces 2 lignes
   const statsTop = descTop + maxLines * pt(10) * 1.25 + 2*MM;
   ctx.font = `${pt(8)}px sans-serif`;
   ctx.fillStyle = '#0D0D0D';

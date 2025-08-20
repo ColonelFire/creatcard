@@ -1,49 +1,46 @@
 <!doctype html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Générateur de cartes TCG</title>
-  <style>
-    :root{
-      --bg:#8C8C8C;             /* Fond du site corrigé (RAL #8C8C8C) */
-      --ui:#0b3890;             /* Panneaux */
-      --ui-2:#0f44a9;           /* En-têtes */
-      --text:#ECF2FF;           /* Texte clair */
-      --card-shadow: rgba(0,0,0,.35);
-    }
-    *{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,Helvetica,sans-serif}
-    html,body{height:100%}
-    body{margin:0;background:var(--bg);color:var(--text);display:flex;flex-direction:column}
-    header{background:var(--ui-2);padding:10px 16px;font-weight:700;letter-spacing:.3px;box-shadow:0 2px 0 rgba(0,0,0,.2)}
-    .app{display:grid;grid-template-columns:360px 1fr;gap:16px;padding:16px;min-height:0;flex:1}
-    .panel{background:var(--ui);padding:12px;border-radius:12px;box-shadow:0 8px 30px var(--card-shadow);overflow:auto}
-    .panel h2{margin:0 0 10px 0;font-size:18px}
-    .group{margin-bottom:12px}
-    .group label{display:block;font-size:12px;margin:0 0 6px 2px;opacity:.9}
-    .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-    input[type="text"], input[type="number"], select, textarea{
-      width:100%;border:1px solid rgba(255,255,255,.2);border-radius:8px;background:#0a2e73;color:var(--text);
-      padding:10px;font-size:14px;outline:none
-    }
-    textarea{min-height:84px;resize:vertical}
-    .btns{display:flex;gap:8px;flex-wrap:wrap}
-    button{
-      border:0;background:#173b97;color:#fff;padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:600
-    }
-    button.secondary{background:#0a2e73}
-    .preview{display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
-      border-radius:12px;box-shadow:0 8px 30px var(--card-shadow);position:relative}
-    canvas{display:block;max-width:100%;height:auto;box-shadow:0 18px 50px var(--card-shadow);background:#fff;border-radius:0}
-    .foot{opacity:.8;margin-top:8px;font-size:12px}
-    .zoombar{display:flex;gap:8px;align-items:center}
-    .zoombar input[type=range]{flex:1}
-    .badge{display:inline-block;background:#0a2e73;border:1px solid rgba(255,255,255,.2);padding:2px 6px;border-radius:6px;font-size:12px;margin-left:6px}
-    .help{font-size:12px;opacity:.9;line-height:1.4}
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Générateur de cartes TCG (63×89 mm)</title>
+<style>
+  :root{
+    --bg: #8C8C8C;  /* fond site */
+    --ui: #0b3890;
+    --ui-2:#0f44a9;
+    --text:#ECF2FF;
+    --shadow: rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,Helvetica,sans-serif}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--text);display:flex;flex-direction:column}
+  header{background:var(--ui-2);padding:10px 16px;font-weight:700;letter-spacing:.3px;box-shadow:0 2px 0 rgba(0,0,0,.2)}
+  .app{display:grid;grid-template-columns:360px 1fr;gap:16px;padding:16px;min-height:0;flex:1}
+  .panel{background:var(--ui);padding:12px;border-radius:12px;box-shadow:0 8px 30px var(--shadow);overflow:auto}
+  .panel h2{margin:0 0 10px 0;font-size:18px}
+  .group{margin-bottom:12px}
+  .group label{display:block;font-size:12px;margin:0 0 6px 2px;opacity:.9}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  input[type="text"], input[type="number"], select, textarea{
+    width:100%;border:1px solid rgba(255,255,255,.2);border-radius:8px;background:#0a2e73;color:var(--text);
+    padding:10px;font-size:14px;outline:none
+  }
+  textarea{min-height:84px;resize:vertical}
+  .btns{display:flex;gap:8px;flex-wrap:wrap}
+  button{border:0;background:#173b97;color:#fff;padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:600}
+  button.secondary{background:#0a2e73}
+  .preview{display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+    border-radius:12px;box-shadow:0 8px 30px var(--shadow);position:relative}
+  canvas{display:block;max-width:100%;height:auto;box-shadow:0 18px 50px var(--shadow);background:#fff;border-radius:0}
+  .foot{opacity:.8;margin-top:8px;font-size:12px}
+  .zoombar{display:flex;gap:8px;align-items:center}
+  .zoombar input[type=range]{flex:1}
+  .help{font-size:12px;opacity:.9;line-height:1.4}
+</style>
 </head>
 <body>
-  <header>Générateur de cartes TCG – 63 × 89 mm (impression 300 DPI)</header>
+  <header>Générateur de cartes TCG – 63 × 89 mm (300 DPI)</header>
   <div class="app">
     <div class="panel" id="controls">
       <h2>Paramètres</h2>
@@ -104,7 +101,7 @@
         <textarea id="description" placeholder="Texte de description et attaque…"></textarea>
       </div>
 
-      <!-- === Statistiques (nouvelle section) === -->
+      <!-- Statistiques -->
       <div class="group">
         <label>Statistiques (8 pt)</label>
         <div class="row">
@@ -135,9 +132,9 @@
         </div>
       </div>
 
-      <!-- === Hexagone d'évolution === -->
+      <!-- Hexagone d'évolution -->
       <div class="group">
-        <label>Hexagone d'évolution (1 cm de diamètre)</label>
+        <label>Hexagone d'évolution (1 cm, image interne déplaçable/zoomable)</label>
         <div class="row">
           <div>
             <label><input id="hexOn" type="checkbox" checked> Afficher l'hexagone</label>
@@ -153,7 +150,7 @@
             <span id="hexZoomVal" class="help">100%</span>
           </div>
         </div>
-        <p class="help">Bord 1&nbsp;mm (gris si rareté 1–2, noir sinon), fond blanc. Image optionnelle centrée. Utilise « Déplacer : Hexagone » pour bouger l'hexagone, molette = zoom.</p>
+        <p class="help">Glissez dans l’hexagone pour déplacer <em>l’image</em> à l’intérieur. Molette au-dessus de l’hexagone = zoom image interne. Le cadre hexagone reste fixe.</p>
       </div>
 
       <div class="group">
@@ -167,7 +164,7 @@
           <input id="zoom" type="range" min="0.2" max="3" step="0.01" value="1">
           <span id="zoomVal" class="badge">100%</span>
         </div>
-        <p class="help">Glissez l’image directement sur la carte pour la repositionner. Molette = zoom fin.</p>
+        <p class="help">Glissez directement sur la carte pour repositionner l’image principale. Molette = zoom.</p>
       </div>
 
       <div class="group btns">
@@ -175,514 +172,334 @@
         <button id="clear" class="secondary">Effacer tout</button>
       </div>
 
-      <div class="foot">Astuce : les dimensions et marges sont calculées en millimètres selon vos contraintes (bordure 2,5 mm, zone texte 30 mm de haut, compartiments 10×7 mm avec angle 6×3 mm).</div>
+      <div class="foot">Gabarit exact : cadre 2,5 mm — compartiments 10×7 mm (biseau 6×3 mm, gauche bas-droit / droit bas-gauche) — zone texte 30 mm — carte 63×89 mm.</div>
     </div>
 
     <div class="preview">
-      <!-- Canvas plein format (300 DPI) mais réduit visuellement pour l’aperçu -->
       <canvas id="card" width="744" height="1051"></canvas>
     </div>
   </div>
 
-  <script>
-  // === Constantes physiques ===
-  const DPI = 300;                  // Export et rendu natif en 300 DPI
-  const MM = DPI / 25.4;            // px par millimètre
-  const CARD_W = Math.round(63 * MM);   // 63 mm → largeur
-  const CARD_H = Math.round(89 * MM);   // 89 mm → hauteur
-  const BORDER = 2.5 * MM;              // 2,5 mm cadre
-  const BOX_W = 10 * MM, BOX_H = 7 * MM; // Compartiments 10×7 mm
-  const NOTCH_SIDE = 6 * MM, NOTCH_TOP = 3 * MM; // biseau 6×3 mm
-  const BLUE_H = 30 * MM;               // Zone "bleue" (texte) : 30 mm de haut
+<script>
+// ===== Constantes physiques =====
+const DPI = 300;
+const MM = DPI / 25.4;
+const CARD_W = Math.round(63 * MM);
+const CARD_H = Math.round(89 * MM);
+const BORDER = 2.5 * MM;
+const BOX_W = 10 * MM, BOX_H = 7 * MM;
+const NOTCH_SIDE = 6 * MM, NOTCH_TOP = 3 * MM;
+const BLUE_H = 30 * MM;
 
-  // Couleurs
-  const COLORS = {
-    cadre: { gris: '#515859', noir: '#0D0D0D', invisible: null },
-    zoneParRareté: {
-      1: '#93BF34',   // Commun
-      2: '#F2AE30',   // Peu Commune
-      3: '#F25430',   // Rare
-      4: '#F23030',   // Epic (opaque)
-      5: '#F26398',   // Légendaire (opaque)
-      6: '#04BF8A'    // Exclusif (opaque)
-    },
-    coinsNoirs: '#0D0D0D'
-  };
+// Couleurs
+const COLORS = {
+  cadre: { gris: '#515859', noir: '#0D0D0D', invisible: null },
+  zoneParRareté: {
+    1:'#93BF34', 2:'#F2AE30', 3:'#F25430', 4:'#F23030', 5:'#F26398', 6:'#04BF8A'
+  },
+  coinsNoirs:'#0D0D0D'
+};
 
-  // Conversion points → pixels (canvas à DPI constants)
-  const pt = v => v * DPI / 72; // 1 pt = 1/72 in
+// Icônes de rareté (placer les fichiers dans ./images/)
+const ICON_MAP = {1:'images/C.png',2:'images/PC.png',3:'images/R.png',4:'images/EP.png',5:'images/L.png',6:'images/EX.png'};
+const ICON_LABEL = {1:'C',2:'PC',3:'R',4:'EP',5:'L',6:'EX'};
+const rarityIcons = {}; for(const k in ICON_MAP){ const im=new Image(); im.src=ICON_MAP[k]; rarityIcons[k]=im; }
 
-  // Éléments DOM
-  const c = document.getElementById('card');
-  const ctx = c.getContext('2d');
-  c.width = CARD_W; c.height = CARD_H;
+// Outils
+const pt = v => v * DPI / 72;
+const $ = id => document.getElementById(id);
 
-  // Inputs
-  const $ = id => document.getElementById(id);
-  const inputs = {
-    cadre: $('cadre'), rarete: $('rarete'), nom: $('nom'), pv: $('pv'), extension: $('extension'),
-    illustrateur: $('illustrateur'), numero: $('numero'), description: $('description'),
-    atk: $('atk'), atkspd: $('atkspd'), def: $('def'), defspd: $('defspd'), spd: $('spd'),
-    hexOn: $('hexOn'), hexFile: $('hexFile'), hexZoom: $('hexZoom'), hexZoomVal: $('hexZoomVal'),
-    file: $('file'), zoom: $('zoom'), zoomVal: $('zoomVal'), export: $('export'), clear: $('clear'), resetImg: $('resetImg')
-  };
+// DOM
+const c = $('card'); const ctx = c.getContext('2d');
+c.width = CARD_W; c.height = CARD_H;
 
-  // Icônes de rareté à afficher à côté du numéro
-  const ICON_MAP = { 1:'images/C.png', 2:'images/PC.png', 3:'images/R.png', 4:'images/EP.png', 5:'images/L.png', 6:'images/EX.png' };
-  const ICON_LABEL = { 1:'C', 2:'PC', 3:'R', 4:'EP', 5:'L', 6:'EX' };
-  const rarityIcons = {};
-  for(const k in ICON_MAP){ const im = new Image(); im.src = ICON_MAP[k]; rarityIcons[k] = im; }
+const inputs = {
+  cadre: $('cadre'), rarete: $('rarete'), nom: $('nom'), pv: $('pv'), extension: $('extension'),
+  illustrateur: $('illustrateur'), numero: $('numero'), description: $('description'),
+  atk: $('atk'), atkspd: $('atkspd'), def: $('def'), defspd: $('defspd'), spd: $('spd'),
+  hexOn: $('hexOn'), hexFile: $('hexFile'), hexZoom: $('hexZoom'), hexZoomVal: $('hexZoomVal'),
+  file: $('file'), zoom: $('zoom'), zoomVal: $('zoomVal'), export: $('export'), clear: $('clear'), resetImg: $('resetImg')
+};
 
-  // Image optionnelle pour l'hexagone
-  let hexImg = null; // image dans l'hexagone
-  let hexScale = 1; // zoom image hex
-  let hexPos = null; // centre hex (fixe)
-  let hexImgOffset = {x:0,y:0};
-  let hexImgScale = 1;   // zoom de l'image dans l'hexagone
-  let hexImgOffset = {x:0,y:0}; // décalage de l'image dans l'hexagone  // position du centre de l'hexagone (définie au 1er draw)
+// États images
+let img=null; let imgPos={x:CARD_W/2,y:CARD_H/2}; let imgScale=1;
+let hexImg=null; let hexScale=1; let hexPos=null; let hexImgOffset={x:0,y:0};
 
-  // État image importée + déplacement/zoom
-  let img = null;      // HTMLImageElement
-  let imgPos = { x: CARD_W/2, y: CARD_H/2 }; // centre de l’image (en px carte)
-  let imgScale = 1;    // facteur de zoom
-  let dragging = false, dragTarget='image', dragStart = {x:0,y:0}, startPos={x:0,y:0}, startHexOffset={x:0,y:0};
-
-  function loadImage(file){
-    const reader = new FileReader();
-    reader.onload = e => {
-      const i = new Image();
-      i.onload = () => { img = i; imgScale = 1; imgPos = { x: CARD_W/2, y: CARD_H/2 }; draw(); };
-      i.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  }
-
-  inputs.file.addEventListener('change', e => {
-    if(e.target.files && e.target.files[0]) loadImage(e.target.files[0]);
-  });
-
-  inputs.resetImg.addEventListener('click', () => {
-    imgScale = 1; imgPos = { x: CARD_W/2, y: CARD_H/2 }; draw();
-  });
-
-  // Image hexagone
-  inputs.hexFile.addEventListener('change', e => {
-    if(e.target.files && e.target.files[0]){
-      const R = new FileReader();
-      R.onload = ev => { const i = new Image(); i.onload = () => { hexImg = i; draw(); }; i.src = ev.target.result; };
-      R.readAsDataURL(e.target.files[0]);
-    }
-  });
-
-  // Drag & déplacement
-  c.addEventListener('pointerdown', e => {
-    const rect=c.getBoundingClientRect(); const s=c.width/rect.width;
-    dragging = true;
-    const px = (e.clientX-rect.left)*s, py=(e.clientY-rect.top)*s;
-    dragStart = {x:px, y:py};
-    startPos = {...imgPos};
-    startHexOffset = {...hexImgOffset};
-
-    // Clique dans l'hexagone ? (cercle inscrit)
-    let insideHex = false;
-    if(inputs.hexOn && inputs.hexOn.checked && hexPos){
-      const r = 10*MM/2; const dx=px-hexPos.x, dy=py-hexPos.y;
-      insideHex = (dx*dx+dy*dy) <= r*r;
-    }
-    dragTarget = insideHex ? 'heximg' : 'mainimg';
-
-    c.setPointerCapture(e.pointerId);
-  }); const s = c.width/rect.width;
-    const px = (e.clientX-rect.left)*s, py=(e.clientY-rect.top)*s;
-    const {cx,cy,diameter} = getHexGeometry();
-    const inHex = ((px-cx)**2 + (py-cy)**2) <= (diameter/2)**2;
-    dragging = true; dragTarget = inHex ? 'heximg' : 'image';
-    dragStart = {x:px, y:py}; startPos={...imgPos}; startHexImgOffset={...hexImgOffset};
-    c.setPointerCapture(e.pointerId);
-  }); const s = c.width / rect.width;
-    dragging = true; dragTarget = (inputs.moveTarget ? inputs.moveTarget.value : 'image');
-    dragStart = { x:(e.clientX-rect.left)*s, y:(e.clientY-rect.top)*s };
-    startPos   = { ...imgPos };
-    startHexPos= { ...(hexPos || { x: CARD_W*0.2, y: CARD_H*0.6 }) };
-    c.setPointerCapture(e.pointerId);
-  });
-  c.addEventListener('pointermove', e => {
-    if(!dragging) return; const rect=c.getBoundingClientRect(); const s=c.width/rect.width;
-    const px=(e.clientX-rect.left)*s, py=(e.clientY-rect.top)*s;
-    const dx = px - dragStart.x, dy = py - dragStart.y;
-    if(dragTarget==='heximg'){
-      hexImgOffset = { x: startHexOffset.x + dx, y: startHexOffset.y + dy };
-    } else if(dragTarget==='mainimg'){
-      if(!img) return; imgPos = { x: startPos.x + dx, y: startPos.y + dy };
-    }
-    draw();
-  }); const s=c.width/rect.width;
-    const px=(e.clientX-rect.left)*s, py=(e.clientY-rect.top)*s;
-    if(dragTarget==='heximg'){
-      hexImgOffset.x = startHexImgOffset.x + (px - dragStart.x);
-      hexImgOffset.y = startHexImgOffset.y + (py - dragStart.y);
-    } else if(dragTarget==='image'){
-      if(!img) return; imgPos.x = startPos.x + (px - dragStart.x); imgPos.y = startPos.y + (py - dragStart.y);
-    }
-    draw();
-  }); const s=c.width/rect.width;
-    const cur = { x:(e.clientX-rect.left)*s, y:(e.clientY-rect.top)*s };
-    if(dragTarget==='hex'){
-      if(!hexPos) hexPos = { x: CARD_W*0.2, y: CARD_H*0.6 };
-      hexPos.x = startHexPos.x + (cur.x - dragStart.x);
-      hexPos.y = startHexPos.y + (cur.y - dragStart.y);
-    } else {
-      if(!img) return;
-      imgPos.x = startPos.x + (cur.x - dragStart.x);
-      imgPos.y = startPos.y + (cur.y - dragStart.y);
-    }
-    draw();
-  });
-  c.addEventListener('pointerup', e => { dragging = false; c.releasePointerCapture(e.pointerId); });
-
-  // Molette = zoom fin
-  c.addEventListener('wheel', e => {
-    e.preventDefault();
-    const rect=c.getBoundingClientRect(); const s=c.width/rect.width;
-    const px=(e.clientX-rect.left)*s, py=(e.clientY-rect.top)*s;
-    const delta=-e.deltaY/1000;
-    let insideHex=false; if(inputs.hexOn&&inputs.hexOn.checked&&hexPos){ const r=10*MM/2; const dx=px-hexPos.x, dy=py-hexPos.y; insideHex=(dx*dx+dy*dy)<=r*r; }
-    if(insideHex){
-      hexScale = Math.min(2.5, Math.max(0.2, hexScale*(1+delta)));
-      if(inputs.hexZoom){ inputs.hexZoom.value=hexScale.toFixed(2); if(inputs.hexZoomVal) inputs.hexZoomVal.textContent=Math.round(hexScale*100)+'%'; }
-    } else {
-      if(!img) return; imgScale=Math.min(3,Math.max(0.2,imgScale*(1+delta))); inputs.zoom.value=imgScale.toFixed(2); if(inputs.zoomVal) inputs.zoomVal.textContent=Math.round(imgScale*100)+'%';
-    }
-    draw();
-  }, {passive:false});
-
-  inputs.zoom.addEventListener('input',()=>{ imgScale=parseFloat(inputs.zoom.value); if(inputs.zoomVal) inputs.zoomVal.textContent=Math.round(imgScale*100)+'%'; draw(); });
-  if(inputs.hexZoom){ inputs.hexZoom.addEventListener('input', ()=>{ hexScale=parseFloat(inputs.hexZoom.value); if(inputs.hexZoomVal) inputs.hexZoomVal.textContent=Math.round(hexScale*100)+'%'; draw(); }); if(inputs.hexZoomVal) inputs.hexZoomVal.textContent = Math.round(hexImgScale*100)+'%'; draw(); }); if(inputs.hexZoomVal) inputs.hexZoomVal.textContent=Math.round(hexScale*100)+'%'; draw(); }); }
-
-
-  // Boutons
-  inputs.export.addEventListener('click', () => {
-    const url = c.toDataURL('image/png');
-    const a = document.createElement('a');
-    a.href = url; a.download = `carte_tcg_${Date.now()}.png`;
-    a.click();
-  });
-  inputs.clear.addEventListener('click', () => {
-    ['nom','pv','extension','illustrateur','numero','description'].forEach(id => $(id).value='');
-    inputs.rarete.value='1'; inputs.cadre.value='gris'; img=null; draw();
-  });
-
-  // Redessin sur changement de paramètres
-  ['input','change'].forEach(evt => {
-    Object.values(inputs).forEach(el => { if(el && el.tagName){ el.addEventListener(evt, draw); } });
-  });
-
-  function drawFrame(color){
-    if(!color) return; // cadre invisible
-    ctx.fillStyle = color;
-    // 4 côtés
-    ctx.fillRect(0,0,CARD_W,BORDER);                         // haut
-    ctx.fillRect(0,CARD_H-BORDER,CARD_W,BORDER);             // bas
-    ctx.fillRect(0,0,BORDER,CARD_H);                         // gauche
-    ctx.fillRect(CARD_W-BORDER,0,BORDER,CARD_H);             // droite
-  }
-
-  function drawHorizontalBar(color, y){
-    if(!color) return;
-    ctx.fillStyle = color;
-    ctx.fillRect(BORDER, y - BORDER, CARD_W - 2*BORDER, BORDER);
-  }
-
-  function drawTopCornerCaps(){
-    const t = BORDER;
-    ctx.fillStyle = COLORS.coinsNoirs;
-    // coin gauche
-    ctx.fillRect(0,0, t*4, t); // bande horizontale
-    ctx.fillRect(0,0, t, t*4); // bande verticale
-    // coin droit
-    ctx.fillRect(CARD_W - t*4, 0, t*4, t);
-    ctx.fillRect(CARD_W - t, 0, t, t*4);
-  }
-
-  // Dessine un hexagone plein (blanc) avec bord coloré, et optionnellement une image centrée à l'intérieur
-  function drawHexagonBadge(cx, cy, diameter, strokeColor, strokeMM, innerImage, innerScale=1, innerOffset={x:0,y:0}){
-    const r = diameter/2; const pts=[]; for(let i=0;i<6;i++){ const ang=Math.PI/6 + i*Math.PI/3; pts.push({x:cx+r*Math.cos(ang), y:cy+r*Math.sin(ang)}); }
-    ctx.save();
-    // Hexagone
-    ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y); for(let i=1;i<6;i++) ctx.lineTo(pts[i].x, pts[i].y); ctx.closePath();
-    ctx.fillStyle = '#ffffff'; ctx.fill();
-    ctx.lineWidth = strokeMM; ctx.strokeStyle = strokeColor; ctx.stroke();
-
-    // Image intérieure (déplaçable/zoomable)
-    if(innerImage && innerImage.complete && innerImage.naturalWidth){
-      ctx.save(); ctx.clip();
-      const box = diameter * 0.8 * innerScale; // marge 10% autour
-      const ix = cx - box/2 + innerOffset.x;
-      const iy = cy - box/2 + innerOffset.y;
-      ctx.drawImage(innerImage, ix, iy, box, box);
-      ctx.restore();
-    }
+// ===== Helpers dessin =====
+function drawFrame(color){
+  if(!color) return;
+  ctx.fillStyle=color;
+  ctx.fillRect(0,0,CARD_W,BORDER);
+  ctx.fillRect(0,CARD_H-BORDER,CARD_W,BORDER);
+  ctx.fillRect(0,0,BORDER,CARD_H);
+  ctx.fillRect(CARD_W-BORDER,0,BORDER,CARD_H);
+}
+function drawHorizontalBar(color,y){
+  if(!color) return;
+  ctx.fillStyle=color;
+  ctx.fillRect(BORDER, y-BORDER, CARD_W-2*BORDER, BORDER);
+}
+// Compartiments : biseau en BAS (gauche bas-droit / droit bas-gauche)
+function compartmentLeft(x,y,w,h, notchX, notchY, color){
+  ctx.beginPath();
+  ctx.moveTo(x, y);                // haut-gauche
+  ctx.lineTo(x + w, y);            // haut-droit
+  ctx.lineTo(x + w, y + h - notchY); // descendre avant biseau
+  ctx.lineTo(x + w - notchX, y + h); // biseau bas-droit -> vers gauche
+  ctx.lineTo(x, y + h);            // bas-gauche
+  ctx.closePath();
+  ctx.fillStyle=color; ctx.fill();
+}
+function compartmentRight(x,y,w,h, notchX, notchY, color){
+  ctx.beginPath();
+  ctx.moveTo(x, y);                // haut-gauche
+  ctx.lineTo(x + w, y);            // haut-droit
+  ctx.lineTo(x + w, y + h);        // bas-droit
+  ctx.lineTo(x + notchX, y + h);   // biseau bas-gauche -> vers droite
+  ctx.lineTo(x, y + h - notchY);   // remonte un peu
+  ctx.closePath();
+  ctx.fillStyle=color; ctx.fill();
+}
+function drawTopCornerCaps(){
+  const t=BORDER;
+  ctx.fillStyle=COLORS.coinsNoirs;
+  // coin gauche
+  ctx.fillRect(0,0,t*4,t);
+  ctx.fillRect(0,0,t,t*4);
+  // coin droit
+  ctx.fillRect(CARD_W - t*4, 0, t*4, t);
+  ctx.fillRect(CARD_W - t, 0, t, t*4);
+}
+function drawHexagonBadge(cx, cy, diameter, strokeColor, strokeMM, innerImage, innerScale=1, innerOffset={x:0,y:0}){
+  const r = diameter/2;
+  const pts=[]; for(let i=0;i<6;i++){ const ang=Math.PI/6 + i*Math.PI/3; pts.push({x:cx+r*Math.cos(ang), y:cy+r*Math.sin(ang)}); }
+  ctx.save();
+  ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y); for(let i=1;i<6;i++) ctx.lineTo(pts[i].x, pts[i].y); ctx.closePath();
+  ctx.fillStyle='#fff'; ctx.fill();
+  ctx.lineWidth=strokeMM; ctx.strokeStyle=strokeColor; ctx.stroke();
+  if(innerImage && innerImage.complete && innerImage.naturalWidth){
+    ctx.save(); ctx.clip();
+    const box = diameter * 0.8 * innerScale;
+    const ix = cx - box/2 + innerOffset.x;
+    const iy = cy - box/2 + innerOffset.y;
+    ctx.drawImage(innerImage, ix, iy, box, box);
     ctx.restore();
   }
-    ctx.restore();
-  });
-    }
-    ctx.save();
-    ctx.beginPath();
-    ctx.moveTo(pts[0].x, pts[0].y);
-    for(let i=1;i<6;i++) ctx.lineTo(pts[i].x, pts[i].y);
-    ctx.closePath();
-    ctx.fillStyle = '#ffffff';
-    ctx.fill();
-    ctx.lineWidth = strokeMM;
-    ctx.strokeStyle = strokeColor;
-    ctx.stroke();
-
-    if(innerImage && innerImage.complete && innerImage.naturalWidth){
-      ctx.save();
-      ctx.clip();
-      const box = diameter * 0.8; // marge intérieure
-      ctx.drawImage(innerImage, cx - box/2, cy - box/2, box, box);
-      ctx.restore();
-    }
-    ctx.restore();
+  ctx.restore();
+}
+function wrapText(text,maxWidth){
+  const words=(text||'').split(/\s+/); const lines=[]; let line='';
+  for(const w of words){
+    const t=line?line+' '+w:w;
+    const m=ctx.measureText(t);
+    if(m.width>maxWidth && line){ lines.push(line); line=w; } else { line=t; }
   }
+  if(line) lines.push(line);
+  return lines;
+}
 
-  function compartmentLeft(x,y,w,h, notchX, notchY, color){
-    // Biseau en BAS-DROIT (intérieur) – demandé
-    ctx.beginPath();
-    ctx.moveTo(x, y);                  // haut-gauche
-    ctx.lineTo(x + w, y);              // haut-droit
-    ctx.lineTo(x + w, y + h - notchY); // descendre avant biseau bas-droit
-    ctx.lineTo(x + w - notchX, y + h); // biseau vers gauche
-    ctx.lineTo(x, y + h);              // bas-gauche
-    ctx.closePath();
-    ctx.fillStyle = color; ctx.fill();
+// ===== Interactions =====
+function setPreviewSize(){
+  const container=document.querySelector('.preview');
+  const maxW = Math.min(372, (container ? container.clientWidth : 372) - 20);
+  const cssW = Math.max(240, maxW);
+  c.style.width = cssW + 'px';
+  c.style.height = (cssW * 89 / 63) + 'px';
+}
+window.addEventListener('resize', setPreviewSize);
+
+// Image principale
+function loadImage(file){
+  const r=new FileReader();
+  r.onload=e=>{ const i=new Image(); i.onload=()=>{ img=i; imgScale=1; imgPos={x:CARD_W/2,y:CARD_H/2}; draw(); }; i.src=e.target.result; };
+  r.readAsDataURL(file);
+}
+inputs.file.addEventListener('change', e=>{ if(e.target.files && e.target.files[0]) loadImage(e.target.files[0]); });
+inputs.resetImg.addEventListener('click', ()=>{ imgScale=1; imgPos={x:CARD_W/2,y:CARD_H/2}; draw(); });
+
+// Image hexagone
+inputs.hexFile.addEventListener('change', e=>{
+  if(e.target.files && e.target.files[0]){
+    const R=new FileReader();
+    R.onload=ev=>{ const i=new Image(); i.onload=()=>{ hexImg=i; draw(); }; i.src=ev.target.result; };
+    R.readAsDataURL(e.target.files[0]);
   }
-  function compartmentRight(x,y,w,h, notchX, notchY, color){
-    // Biseau en BAS-GAUCHE (intérieur) – demandé
-    ctx.beginPath();
-    ctx.moveTo(x, y);                   // haut-gauche
-    ctx.lineTo(x + w, y);               // haut-droit
-    ctx.lineTo(x + w, y + h);           // bas-droit
-    ctx.lineTo(x + notchX, y + h);      // bas vers droite jusqu'au biseau
-    ctx.lineTo(x, y + h - notchY);      // biseau remontant
-    ctx.closePath();
-    ctx.fillStyle = color; ctx.fill();
+});
+inputs.hexZoom.addEventListener('input', ()=>{ hexScale=parseFloat(inputs.hexZoom.value); if(inputs.hexZoomVal) inputs.hexZoomVal.textContent=Math.round(hexScale*100)+'%'; draw(); });
+
+// Drag / Zoom selon la zone cliquée
+let dragging=false, dragStart={x:0,y:0}, startPos={x:0,y:0}, startHexOffset={x:0,y:0}, dragTarget='mainimg';
+c.addEventListener('pointerdown', e=>{
+  const rect=c.getBoundingClientRect(); const s=c.width/rect.width;
+  const px=(e.clientX-rect.left)*s, py=(e.clientY-rect.top)*s;
+  dragging=true; dragStart={x:px,y:py}; startPos={...imgPos}; startHexOffset={...hexImgOffset};
+  // déterminer si le clic est dans l'hexagone (cercle inscrit)
+  let insideHex=false;
+  if(inputs.hexOn.checked){
+    const innerX=BORDER, innerY=BORDER, innerW=CARD_W-2*BORDER, innerH=CARD_H-2*BORDER;
+    const zoneY = innerY + innerH - BLUE_H;
+    if(!hexPos){ const hexD0=10*MM; hexPos={ x:innerX+hexD0/2+1*MM, y:zoneY-hexD0/2-1*MM } }
+    const r= (10*MM)/2;
+    const dx=px-hexPos.x, dy=py-hexPos.y; insideHex=(dx*dx+dy*dy)<=r*r;
   }
-
-  function wrapText(text, maxWidth, fontPx){
-    const words = (text||'').split(/\s+/);
-    const lines = [];
-    let line = '';
-    for(let w of words){
-      const test = line ? line + ' ' + w : w;
-      const metrics = ctx.measureText(test);
-      if(metrics.width > maxWidth && line){
-        lines.push(line);
-        line = w;
-      } else {
-        line = test;
-      }
-    }
-    if(line) lines.push(line);
-    // Gestion des sauts de ligne manuels \n
-    const out=[]; lines.join('\n').split('\n').forEach(l=>{ if(l!=='') out.push(l); else out.push('') });
-    return out;
+  dragTarget = insideHex ? 'heximg' : 'mainimg';
+  c.setPointerCapture(e.pointerId);
+});
+c.addEventListener('pointermove', e=>{
+  if(!dragging) return;
+  const rect=c.getBoundingClientRect(); const s=c.width/rect.width;
+  const px=(e.clientX-rect.left)*s, py=(e.clientY-rect.top)*s;
+  const dx=px-dragStart.x, dy=py-dragStart.y;
+  if(dragTarget==='heximg'){
+    hexImgOffset = {x:startHexOffset.x + dx, y:startHexOffset.y + dy};
+  } else {
+    if(!img) return;
+    imgPos = {x:startPos.x + dx, y:startPos.y + dy};
   }
-  // Géométrie fixe de l'hexagone (1 cm de diamètre)
-  function getHexGeometry(){ const diameter=10*MM; const cx=BORDER + diameter/2 + 1*MM; const cy=(CARD_H - BORDER - BLUE_H) - diameter/2 - 1*MM; return {cx,cy,diameter}; }
+  draw();
+});
+c.addEventListener('pointerup', e=>{ dragging=false; try{ c.releasePointerCapture(e.pointerId); }catch(_){} });
+c.addEventListener('wheel', e=>{
+  e.preventDefault();
+  const rect=c.getBoundingClientRect(); const s=c.width/rect.width;
+  const px=(e.clientX-rect.left)*s, py=(e.clientY-rect.top)*s;
+  const delta=-e.deltaY/1000;
+  // au-dessus de l'hexagone ?
+  let insideHex=false;
+  if(inputs.hexOn.checked && hexPos){
+    const r=(10*MM)/2; const dx=px-hexPos.x, dy=py-hexPos.y; insideHex=(dx*dx+dy*dy)<=r*r;
+  }
+  if(insideHex){
+    hexScale = Math.min(2.5, Math.max(0.2, hexScale*(1+delta)));
+    inputs.hexZoom.value = hexScale.toFixed(2); if(inputs.hexZoomVal) inputs.hexZoomVal.textContent=Math.round(hexScale*100)+'%';
+  } else {
+    if(!img) return;
+    imgScale = Math.min(3, Math.max(0.2, imgScale*(1+delta)));
+    inputs.zoom.value = imgScale.toFixed(2); if(inputs.zoomVal) inputs.zoomVal.textContent=Math.round(imgScale*100)+'%';
+  }
+  draw();
+},{passive:false});
+inputs.zoom.addEventListener('input', ()=>{ imgScale=parseFloat(inputs.zoom.value); if(inputs.zoomVal) inputs.zoomVal.textContent=Math.round(imgScale*100)+'%'; draw(); });
 
-  function draw(){
+// Export & reset
+inputs.export.addEventListener('click', ()=>{ const a=document.createElement('a'); a.href=c.toDataURL('image/png'); a.download=`carte_tcg_${Date.now()}.png`; a.click(); });
+inputs.clear.addEventListener('click', ()=>{
+  ['nom','pv','extension','illustrateur','numero','description','atk','atkspd','def','defspd','spd'].forEach(id=>$(id).value='');
+  inputs.rarete.value='1'; inputs.cadre.value='gris'; img=null; hexImg=null; hexScale=1; hexImgOffset={x:0,y:0};
+  draw();
+});
 
-    try{
-    // Effacer
+// Redessiner sur chaque modif
+['input','change'].forEach(evt=>{ Object.values(inputs).forEach(el=>{ if(el && el.tagName) el.addEventListener(evt, draw); }); });
+
+// ===== Dessin principal =====
+function draw(){
+  try{
     ctx.clearRect(0,0,CARD_W,CARD_H);
+    // fond carte
+    ctx.fillStyle='#fff'; ctx.fillRect(0,0,CARD_W,CARD_H);
 
-    // Fond blanc de la carte
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0,0,CARD_W,CARD_H);
-
-    // Image importée (arrière-plan, couvrant la carte mais librement positionnable)
+    // image arrière-plan
     if(img){
-      // Calcul pour couvrir la carte en préservant le ratio
-      const scaleToCover = Math.max(CARD_W / img.width, CARD_H / img.height);
-      const scale = scaleToCover * imgScale;
-      const w = img.width * scale;
-      const h = img.height * scale;
-      const x = imgPos.x - w/2;
-      const y = imgPos.y - h/2;
-      ctx.drawImage(img, x, y, w, h);
+      const cover = Math.max(CARD_W/img.width, CARD_H/img.height);
+      const s = cover * imgScale; const w=img.width*s, h=img.height*s;
+      ctx.drawImage(img, imgPos.x-w/2, imgPos.y-h/2, w, h);
     }
 
-    // Cadre
-    const cadreVal = inputs.cadre.value;                 // gris | noir | invisible
-    const cadreColor = COLORS.cadre[cadreVal];
+    // cadres
+    const r = parseInt(inputs.rarete.value, 10);
+    const cadreColor = COLORS.cadre[ inputs.cadre.value ];
     drawFrame(cadreColor);
 
-    // Limites internes (zone utile)
-    const innerX = BORDER, innerY = BORDER;
-    const innerW = CARD_W - 2*BORDER, innerH = CARD_H - 2*BORDER;
+    // zone utile
+    const innerX=BORDER, innerY=BORDER, innerW=CARD_W-2*BORDER, innerH=CARD_H-2*BORDER;
 
-    // Compartiments (Extension et PV) collés en haut, à l'intérieur du cadre
-    const boxY = innerY + 0; // plaqué en haut
-    const leftBoxX  = innerX + 0;
-    const rightBoxX = innerX + innerW - BOX_W;
-    const compColor = (cadreColor ? cadreColor : '#0D0D0D');
+    // compartiments (couleur = cadre, sinon noir)
+    const compColor = cadreColor ? cadreColor : '#0D0D0D';
+    const boxY = innerY;
+    const leftBoxX = innerX, rightBoxX = innerX + innerW - BOX_W;
     compartmentLeft(leftBoxX, boxY, BOX_W, BOX_H, NOTCH_SIDE, NOTCH_TOP, compColor);
     compartmentRight(rightBoxX, boxY, BOX_W, BOX_H, NOTCH_SIDE, NOTCH_TOP, compColor);
-
-    // Texte des compartiments (10 pt)
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = `${pt(10)}px sans-serif`;
-    ctx.fillStyle = '#fff';
+    // texte blanc dans compartiments
+    ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.font=`${pt(10)}px sans-serif`; ctx.fillStyle='#fff';
     ctx.fillText((inputs.extension.value||'').trim(), leftBoxX + BOX_W/2, boxY + BOX_H/2);
-    ctx.fillText((inputs.pv.value||'').trim(), rightBoxX + BOX_W/2, boxY + BOX_H/2);
+    ctx.fillText((inputs.pv.value||'').trim(),       rightBoxX + BOX_W/2, boxY + BOX_H/2);
 
-    // Zone texte ("bleue") collée en bas, pleine largeur intérieure, hauteur 30 mm
+    // coins noirs (L) uniquement r>=4 ET cadre visible
+    if(r>=4 && cadreColor){ drawTopCornerCaps(); }
+
+    // zone couleur
     const zoneX=innerX, zoneW=innerW, zoneH=BLUE_H, zoneY=innerY+innerH-zoneH;
-    // Transparence légère pour 4–6
     ctx.save();
-    const r=parseInt(inputs.rarete.value,10);
-    ctx.globalAlpha = (r>=4 ? 0.85 : 1);
+    ctx.globalAlpha = (r>=4 ? 0.85 : 1);   // transparence pour 4-6
     ctx.fillStyle = COLORS.zoneParRareté[r] || '#93BF34';
     ctx.fillRect(zoneX, zoneY, zoneW, zoneH);
     ctx.restore();
-
-    // Barre horizontale du cadre (au-dessus de la zone)
+    // barre horizontale du cadre juste au-dessus
     drawHorizontalBar(cadreColor, zoneY);
 
-    // Hexagone d'évolution (au-dessus de l'image et juste au-dessus de la zone)
-    if(inputs.hexOn && inputs.hexOn.checked){
-      if(!hexPos){ const hexD0=10*MM; hexPos={ x:innerX+hexD0/2+1*MM, y:zoneY-hexD0/2-1*MM } }
-      const hexD = 10*MM; // diamètre FIXE 1 cm
-      const stroke=(r<=2?'#515859':'#0D0D0D');
-      drawHexagonBadge(hexPos.x, hexPos.y, hexD, stroke, 1*MM, hexImg, hexScale, hexImgOffset);
+    // hexagone (fixe), image interne déplaçable/zoomable
+    if(inputs.hexOn.checked){
+      if(!hexPos){ const d=10*MM; hexPos={x:innerX + d/2 + 1*MM, y: zoneY - d/2 - 1*MM}; }
+      const stroke = (r<=2 ? '#515859' : '#0D0D0D');
+      drawHexagonBadge(hexPos.x, hexPos.y, 10*MM, stroke, 1*MM, hexImg, hexScale, hexImgOffset);
     }
 
-    // Coins noirs supérieurs pour les raretés 4/5/6 (masqués si cadre invisible)
-    if(r >= 4 && cadreColor){ drawTopCornerCaps(); }
+    // textes
+    const pad = 2*MM;
+    // nom
+    ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillStyle='#0D0D0D'; ctx.font=`700 ${pt(14)}px sans-serif`;
+    const nameY = zoneY + pad; ctx.fillText((inputs.nom.value||'').toUpperCase(), zoneX + zoneW/2, nameY);
+    // description
+    ctx.font = `${pt(10)}px sans-serif`; ctx.fillStyle='#0D0D0D';
+    const descTop = nameY + pt(14) + 1*MM; const maxWidth = zoneW - pad*2;
+    const lines = wrapText(inputs.description.value, maxWidth); const lh = pt(10)*1.25; let y = descTop;
+    for(const line of lines){ ctx.fillText(line, zoneX + zoneW/2, y); y += lh; }
 
-    // Nom (14 pt) – en haut de la zone
-    const pad = 2 * MM; // marge interne
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillStyle = '#0D0D0D';
-    ctx.font = `700 ${pt(14)}px sans-serif`;
-    const nom = (inputs.nom.value || '').toUpperCase();
-    const nameY = zoneY + pad;
-    ctx.fillText(nom, zoneX + zoneW/2, nameY);
+    // stats 8 pt sous la description
+    const statsTop = y + 1*MM; ctx.font = `${pt(8)}px sans-serif`; ctx.fillStyle='#0D0D0D';
+    ctx.textAlign='left';  ctx.fillText(`Attaque : ${ (inputs.atk.value||'') }`, zoneX+pad, statsTop); ctx.fillText(`Vit.Attaque : ${ (inputs.atkspd.value||'') }`, zoneX+pad, statsTop+pt(8)*1.25);
+    ctx.textAlign='right'; ctx.fillText(`Défense : ${ (inputs.def.value||'') }`, zoneX+zoneW-pad, statsTop); ctx.fillText(`Vit.Défense : ${ (inputs.defspd.value||'') }`, zoneX+zoneW-pad, statsTop+pt(8)*1.25);
 
-    // Description (10 pt), 1 mm sous le nom (pas de centrage vertical)
-    const descTop = nameY + pt(14) + 1*MM; // 1 mm sous le nom
-    const maxWidth = zoneW - pad*2;
+    // bas de carte : illu (g), numéro + icône (d), vitesse (c)
+    const m=1*MM; ctx.textBaseline='alphabetic';
+    ctx.textAlign='left'; ctx.font=`${pt(6)}px sans-serif`; ctx.fillStyle='#0D0D0D';
+    ctx.fillText((inputs.illustrateur.value||'').trim(), BORDER+m, CARD_H-BORDER-m);
 
-    ctx.font = `${pt(10)}px sans-serif`;
-    ctx.fillStyle = '#0D0D0D';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-
-    const lines = wrapText(inputs.description.value || '', maxWidth, pt(10));
-    const lineHeight = pt(10) * 1.25;
-    let y = descTop;
-    for(const line of lines){
-      ctx.fillText(line, zoneX + zoneW/2, y);
-      y += lineHeight;
-    }
-
-    // Statistiques (8 pt) sous la description
-    const statsTop = y + 1*MM; // 1 mm sous la description
-    const lhSmall = pt(8) * 1.25;
-    ctx.font = `${pt(8)}px sans-serif`;
-    ctx.fillStyle = '#0D0D0D';
-
-    // Colonne gauche : Attaque & Vit.Attaque (alignée à gauche)
-    ctx.textAlign = 'left';
-    ctx.fillText(`Attaque : ${ (inputs.atk.value||'').toString() }`, zoneX + pad, statsTop);
-    ctx.fillText(`Vit.Attaque : ${ (inputs.atkspd.value||'').toString() }`, zoneX + pad, statsTop + lhSmall);
-
-    // Colonne droite : Défense & Vit.Défense (alignée à droite)
-    ctx.textAlign = 'right';
-    ctx.fillText(`Défense : ${ (inputs.def.value||'').toString() }`, zoneX + zoneW - pad, statsTop);
-    ctx.fillText(`Vit.Défense : ${ (inputs.defspd.value||'').toString() }`, zoneX + zoneW - pad, statsTop + lhSmall);
-
-    // Mentions bas de carte (6 pt)
-    const m = 1 * MM; // marge
-    ctx.font = `${pt(6)}px sans-serif`;
-    ctx.fillStyle = '#0D0D0D';
-    ctx.textBaseline = 'alphabetic';
-    ctx.textAlign = 'left';
-    const illu = (inputs.illustrateur.value||'').trim();
-    ctx.fillText(illu, BORDER + m, CARD_H - BORDER - m);
-
-    // Numéro + icône
-    ctx.textAlign = 'right';
-    const num = (inputs.numero.value||'').trim();
-    const iconSize = pt(6); const gapIcon = 4; const icon = rarityIcons[r];
+    ctx.textAlign='right';
+    const num=(inputs.numero.value||'').trim(); const icon=rarityIcons[r]; const iconSize=pt(6); const gap=4;
     let numX = CARD_W - BORDER - m;
     if(icon && icon.complete && icon.naturalWidth){
       const ix = CARD_W - BORDER - m - iconSize;
       const iy = CARD_H - BORDER - m - iconSize + pt(6)*0.25;
       ctx.drawImage(icon, ix, iy, iconSize, iconSize);
-      numX = ix - gapIcon;
+      numX = ix - gap;
     } else {
-      const code = ICON_LABEL[r];
-      if(code){ const ix=CARD_W-BORDER-m-iconSize; const iy=CARD_H-BORDER-m-iconSize+pt(6)*0.25; ctx.save(); ctx.fillStyle='#fff'; ctx.fillRect(ix,iy,iconSize,iconSize); ctx.strokeStyle='#00000055'; ctx.lineWidth=1; ctx.strokeRect(ix,iy,iconSize,iconSize); ctx.fillStyle='#0D0D0D'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.font=`bold ${pt(8)}px sans-serif`; ctx.fillText(code, ix+iconSize/2, iy+iconSize/2); ctx.restore(); numX = ix - gapIcon; }
+      // fallback carré blanc avec code
+      const code = ICON_LABEL[r]; const ix=CARD_W-BORDER-m-iconSize; const iy=CARD_H-BORDER-m-iconSize + pt(6)*0.25;
+      ctx.save(); ctx.fillStyle='#fff'; ctx.fillRect(ix,iy,iconSize,iconSize); ctx.strokeStyle='#00000055'; ctx.lineWidth=1; ctx.strokeRect(ix,iy,iconSize,iconSize);
+      ctx.fillStyle='#0D0D0D'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.font=`bold ${pt(8)}px sans-serif`; ctx.fillText(code, ix+iconSize/2, iy+iconSize/2); ctx.restore();
+      numX = ix - gap;
     }
-    ctx.textAlign = 'right';
+    ctx.textAlign='right'; ctx.font=`${pt(6)}px sans-serif`; ctx.fillStyle='#0D0D0D';
     ctx.fillText(num, numX, CARD_H - BORDER - m);
 
-    // Vitesse (8 pt, centré)
-    ctx.textAlign = 'center';
-    ctx.font = `${pt(8)}px sans-serif`;
-    const spd = (inputs.spd.value||'').toString();
-    if(spd){ ctx.fillText(`Vitesse : ${spd}`, CARD_W/2, CARD_H - BORDER - m); }
+    const spd=(inputs.spd.value||''); if(spd){ ctx.textAlign='center'; ctx.font=`${pt(8)}px sans-serif`; ctx.fillText(`Vitesse : ${spd}`, CARD_W/2, CARD_H-BORDER-m); }
 
-    }catch(err){
-      console.error('DRAW ERROR:', err);
-      ctx.clearRect(0,0,CARD_W,CARD_H);
-      ctx.fillStyle='#fff'; ctx.fillRect(0,0,CARD_W,CARD_H);
-      ctx.strokeStyle='red'; ctx.lineWidth=6; ctx.strokeRect(12,12,CARD_W-24,CARD_H-24);
-      ctx.font='16px monospace'; ctx.fillStyle='red'; ctx.fillText('Erreur : '+err.message, 24, 40);
-    }
+  }catch(err){
+    // Afficher l'erreur sur le canvas
+    ctx.clearRect(0,0,CARD_W,CARD_H);
+    ctx.fillStyle='#fff'; ctx.fillRect(0,0,CARD_W,CARD_H);
+    ctx.strokeStyle='red'; ctx.lineWidth=6; ctx.strokeRect(12,12,CARD_W-24,CARD_H-24);
+    ctx.fillStyle='red'; ctx.font='16px monospace'; ctx.fillText('Erreur: '+err.message, 24, 40);
+    console.error(err);
   }
+}
 
-  // Ajuste l'aperçu pour garantir le bon ratio 63:89 quelle que soit la taille de la fenêtre
-  function setPreviewSize(){
-    const container = document.querySelector('.preview');
-    const maxW = Math.min(372, ((container ? container.clientWidth : 372)) - 20);
-    const cssW = Math.max(240, maxW);
-    c.style.width  = cssW + 'px';
-    c.style.height = (cssW * 89 / 63) + 'px';
-  }
-  window.addEventListener('resize', () => { setPreviewSize(); });
+// Premier rendu + UI responsive
+function boot(){ setPreviewSize(); draw(); }
+if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', boot); } else { boot(); }
 
-  // Premier rendu
-  setPreviewSize();
-  draw();
-    // Handler global erreurs (anti-écran blanc)
-  if(!window.__tcgErrorH){
-    window.__tcgErrorH = true;
-    window.addEventListener('error', function(e){
-      try{
-        ctx.save();
-        ctx.clearRect(0,0,CARD_W,CARD_H);
-        ctx.fillStyle='#fff'; ctx.fillRect(0,0,CARD_W,CARD_H);
-        ctx.strokeStyle='red'; ctx.lineWidth=6; ctx.strokeRect(12,12,CARD_W-24,CARD_H-24);
-        ctx.fillStyle='red'; ctx.font='16px monospace'; ctx.fillText('JS ERROR: '+e.message, 24, 40);
-        ctx.restore();
-      }catch(_){ /* ignore */ }
-    });
-  }
-  // Boot / premier rendu sécurisé
-  if(typeof boot==='function'){
-    if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', boot); } else { boot(); }
-  } else {
-    if(document.readyState==='loading'){
-      document.addEventListener('DOMContentLoaded', function(){ setPreviewSize(); try{draw();}catch(_){/* ignore */} });
-    } else { setPreviewSize(); try{draw();}catch(_){/* ignore */} }
-  }
 </script>
 </body>
 </html>

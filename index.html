@@ -3,19 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Générateur de cartes TCG (63×89 mm)</title>
+<title>Générateur de cartes TCG (textures)</title>
 <style>
   :root{
-    --bg: #8C8C8C;  /* fond site */
-    --ui: #0b3890;
-    --ui-2:#0f44a9;
-    --text:#ECF2FF;
-    --shadow: rgba(0,0,0,.35);
+    --bg:#8C8C8C; --ui:#0b3890; --ui2:#0f44a9; --text:#ECF2FF; --shadow: rgba(0,0,0,.35);
   }
   *{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,Helvetica,sans-serif}
   html,body{height:100%}
   body{margin:0;background:var(--bg);color:var(--text);display:flex;flex-direction:column}
-  header{background:var(--ui-2);padding:10px 16px;font-weight:700;letter-spacing:.3px;box-shadow:0 2px 0 rgba(0,0,0,.2)}
+  header{background:var(--ui2);padding:10px 16px;font-weight:700}
   .app{display:grid;grid-template-columns:360px 1fr;gap:16px;padding:16px;min-height:0;flex:1}
   .panel{background:var(--ui);padding:12px;border-radius:12px;box-shadow:0 8px 30px var(--shadow);overflow:auto}
   .panel h2{margin:0 0 10px 0;font-size:18px}
@@ -32,474 +28,308 @@
   button.secondary{background:#0a2e73}
   .preview{display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
     border-radius:12px;box-shadow:0 8px 30px var(--shadow);position:relative}
-  canvas{display:block;max-width:100%;height:auto;box-shadow:0 18px 50px var(--shadow);background:#fff;border-radius:0}
+  canvas{display:block;max-width:100%;height:auto;box-shadow:0 18px 50px var(--shadow);background:#fff}
   .foot{opacity:.8;margin-top:8px;font-size:12px}
-  .zoombar{display:flex;gap:8px;align-items:center}
-  .zoombar input[type=range]{flex:1}
-  .help{font-size:12px;opacity:.9;line-height:1.4}
 </style>
 </head>
 <body>
-  <header>Générateur de cartes TCG – 63 × 89 mm (300 DPI)</header>
-  <div class="app">
-    <div class="panel" id="controls">
-      <h2>Paramètres</h2>
-
-      <div class="group">
-        <div class="row">
-          <div>
-            <label for="cadre">Cadre</label>
-            <select id="cadre">
-              <option value="gris">Gris (#515859)</option>
-              <option value="noir">Noir (#0D0D0D)</option>
-              <option value="invisible">Invisible</option>
-            </select>
-          </div>
-          <div>
-            <label for="rarete">Rareté</label>
-            <select id="rarete">
-              <option value="1">Commun</option>
-              <option value="2">Peu Commune</option>
-              <option value="3">Rare</option>
-              <option value="4">Epic</option>
-              <option value="5">Légendaire</option>
-              <option value="6">Exclusif</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div class="group">
-        <label for="nom">Nom (14 pt)</label>
-        <input id="nom" type="text" placeholder="Nom de la créature" />
-      </div>
-
-      <div class="group row">
+<header>Générateur de cartes TCG (textures) – 63 × 89 mm (300 DPI)</header>
+<div class="app">
+  <div class="panel">
+    <h2>Paramètres</h2>
+    <div class="group">
+      <div class="row">
         <div>
-          <label for="pv">PV (10 pt)</label>
-          <input id="pv" type="text" placeholder="120" />
+          <label for="cadre">Cadre</label>
+          <select id="cadre">
+            <option value="gris">Gris (#515859)</option>
+            <option value="noir">Noir (#0D0D0D)</option>
+            <option value="invisible">Invisible</option>
+          </select>
         </div>
         <div>
-          <label for="extension">Extension (10 pt)</label>
-          <input id="extension" type="text" placeholder="CL01" />
+          <label for="rarete">Rareté</label>
+          <select id="rarete">
+            <option value="1">Commun</option>
+            <option value="2">Peu Commune</option>
+            <option value="3">Rare</option>
+            <option value="4">Epic</option>
+            <option value="5">Légendaire</option>
+            <option value="6">Exclusif</option>
+          </select>
         </div>
       </div>
-
-      <div class="group row">
-        <div>
-          <label for="illustrateur">Illustrateur (6 pt)</label>
-          <input id="illustrateur" type="text" placeholder="Nom de l’illustrateur" />
-        </div>
-        <div>
-          <label for="numero">Numéro (6 pt)</label>
-          <input id="numero" type="text" placeholder="002/112" />
-        </div>
-      </div>
-
-      <div class="group">
-        <label for="description">Description & Attaque (10 pt – retour à la ligne auto)</label>
-        <textarea id="description" placeholder="Texte de description et attaque…"></textarea>
-      </div>
-
-      <!-- Statistiques -->
-      <div class="group">
-        <label>Statistiques (8 pt)</label>
-        <div class="row">
-          <div>
-            <label for="atk">Attaque</label>
-            <input id="atk" type="number" placeholder="31" />
-          </div>
-          <div>
-            <label for="def">Défense</label>
-            <input id="def" type="number" placeholder="30" />
-          </div>
-        </div>
-        <div class="row" style="margin-top:8px">
-          <div>
-            <label for="atkspd">Vit.Attaque</label>
-            <input id="atkspd" type="number" placeholder="34" />
-          </div>
-          <div>
-            <label for="defspd">Vit.Défense</label>
-            <input id="defspd" type="number" placeholder="33" />
-          </div>
-        </div>
-        <div class="row" style="margin-top:8px">
-          <div>
-            <label for="spd">Vitesse (bas de carte)</label>
-            <input id="spd" type="number" placeholder="30" />
-          </div>
-        </div>
-      </div>
-
-      <!-- Hexagone d'évolution -->
-      <div class="group">
-        <label>Hexagone d'évolution (1 cm, image interne déplaçable/zoomable)</label>
-        <div class="row">
-          <div>
-            <label><input id="hexOn" type="checkbox" checked> Afficher l'hexagone</label>
-          </div>
-          <div>
-            <input id="hexFile" type="file" accept="image/*" />
-          </div>
-        </div>
-        <div class="row" style="margin-top:8px">
-          <div style="grid-column:1 / span 2">
-            <label for="hexZoom">Hex: Zoom</label>
-            <input id="hexZoom" type="range" min="0.2" max="2.5" step="0.01" value="1" />
-            <span id="hexZoomVal" class="help">100%</span>
-          </div>
-        </div>
-        <p class="help">Glissez dans l’hexagone pour déplacer <em>l’image</em> à l’intérieur. Molette au-dessus de l’hexagone = zoom image interne. Le cadre hexagone reste fixe.</p>
-      </div>
-
-      <div class="group">
-        <label>Image (arrière-plan)</label>
-        <div class="btns">
-          <input type="file" id="file" accept="image/*" />
-          <button id="resetImg" class="secondary">Réinitialiser l’image</button>
-        </div>
-        <div class="zoombar" style="margin-top:8px">
-          <span>Zoom</span>
-          <input id="zoom" type="range" min="0.2" max="3" step="0.01" value="1">
-          <span id="zoomVal" class="badge">100%</span>
-        </div>
-        <p class="help">Glissez directement sur la carte pour repositionner l’image principale. Molette = zoom.</p>
-      </div>
-
-      <div class="group btns">
-        <button id="export">Télécharger PNG (300 DPI)</button>
-        <button id="clear" class="secondary">Effacer tout</button>
-      </div>
-
-      <div class="foot">Gabarit exact : cadre 2,5 mm — compartiments 10×7 mm (biseau 6×3 mm, gauche bas-droit / droit bas-gauche) — zone texte 30 mm — carte 63×89 mm.</div>
     </div>
 
-    <div class="preview">
-      <canvas id="card" width="744" height="1051"></canvas>
+    <div class="group">
+      <label for="nom">Nom (14 pt)</label>
+      <input id="nom" type="text" placeholder="Nom de la créature" />
     </div>
+
+    <div class="group row">
+      <div>
+        <label for="pv">PV (10 pt)</label>
+        <input id="pv" type="text" placeholder="120" />
+      </div>
+      <div>
+        <label for="extension">Extension (10 pt)</label>
+        <input id="extension" type="text" placeholder="CL01" />
+      </div>
+    </div>
+
+    <div class="group row">
+      <div>
+        <label for="illustrateur">Illustrateur (6 pt)</label>
+        <input id="illustrateur" type="text" placeholder="Nom de l’illustrateur" />
+      </div>
+      <div>
+        <label for="numero">Numéro (6 pt)</label>
+        <input id="numero" type="text" placeholder="002/112" />
+      </div>
+    </div>
+
+    <div class="group">
+      <label for="description">Description & Attaque (10 pt)</label>
+      <textarea id="description" placeholder="Texte de description et attaque…"></textarea>
+    </div>
+
+    <div class="group">
+      <label>Statistiques (8 pt)</label>
+      <div class="row">
+        <div>
+          <label for="atk">Attaque</label>
+          <input id="atk" type="number" placeholder="31" />
+        </div>
+        <div>
+          <label for="def">Défense</label>
+          <input id="def" type="number" placeholder="30" />
+        </div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div>
+          <label for="atkspd">Vit.Attaque</label>
+          <input id="atkspd" type="number" placeholder="34" />
+        </div>
+        <div>
+          <label for="defspd">Vit.Défense</label>
+          <input id="defspd" type="number" placeholder="33" />
+        </div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div>
+          <label for="spd">Vitesse (bas de carte)</label>
+          <input id="spd" type="number" placeholder="30" />
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <label>Hexagone d'évolution (1 cm, image interne)</label>
+      <div class="row">
+        <div><label><input id="hexOn" type="checkbox" checked> Afficher l'hexagone</label></div>
+        <div><input id="hexFile" type="file" accept="image/*"></div>
+      </div>
+      <div style="margin-top:8px">
+        <label for="hexZoom">Hex: Zoom</label>
+        <input id="hexZoom" type="range" min="0.2" max="2.5" step="0.01" value="1"> <span id="hexZoomVal">100%</span>
+      </div>
+    </div>
+
+    <div class="group">
+      <label>Image (arrière-plan)</label>
+      <div class="btns">
+        <input type="file" id="file" accept="image/*" />
+        <button id="resetImg" class="secondary">Réinitialiser l’image</button>
+      </div>
+      <div class="zoombar" style="margin-top:8px">
+        <span>Zoom</span>
+        <input id="zoom" type="range" min="0.2" max="3" step="0.01" value="1">
+        <span id="zoomVal" class="badge">100%</span>
+      </div>
+    </div>
+
+    <div class="group btns">
+      <button id="export">Télécharger PNG (300 DPI)</button>
+      <button id="clear" class="secondary">Effacer tout</button>
+    </div>
+
+    <div class="foot">Textures : placez <code>images/1.png</code>…<code>images/6.png</code> pour les zones de rareté et <code>images/gris.png</code>, <code>images/noir.png</code> pour le cadre.</div>
   </div>
 
+  <div class="preview">
+    <canvas id="card" width="744" height="1051"></canvas>
+  </div>
+</div>
+
 <script>
-// ===== Constantes physiques =====
-const DPI = 300;
-const MM = DPI / 25.4;
-const CARD_W = Math.round(63 * MM);
-const CARD_H = Math.round(89 * MM);
-const BORDER = 2.5 * MM;
-const BOX_W = 10 * MM, BOX_H = 7 * MM;
-const NOTCH_SIDE = 6 * MM, NOTCH_TOP = 3 * MM;
-const BLUE_H = 30 * MM;
+/* ===== Constantes ===== */
+const DPI=300, MM=DPI/25.4;
+const CARD_W=Math.round(63*MM), CARD_H=Math.round(89*MM);
+const BORDER=2.5*MM, BOX_W=10*MM, BOX_H=7*MM, NOTCH_SIDE=6*MM, NOTCH_TOP=3*MM, BLUE_H=30*MM;
 
-// Couleurs
-const COLORS = {
-  cadre: { gris: '#515859', noir: '#0D0D0D', invisible: null },
-  zoneParRareté: {
-    1:'#93BF34', 2:'#F2AE30', 3:'#F25430', 4:'#F23030', 5:'#F26398', 6:'#04BF8A'
-  },
-  coinsNoirs:'#0D0D0D'
+const COLORS={
+  cadre:{gris:'#515859', noir:'#0D0D0D', invisible:null},
+  zone:{1:'#93BF34',2:'#F2AE30',3:'#F25430',4:'#F23030',5:'#F26398',6:'#04BF8A'},
+  coins:'#0D0D0D'
 };
 
-// Icônes de rareté (placer les fichiers dans ./images/)
-const ICON_MAP = {1:'images/C.png',2:'images/PC.png',3:'images/R.png',4:'images/EP.png',5:'images/L.png',6:'images/EX.png'};
-const ICON_LABEL = {1:'C',2:'PC',3:'R',4:'EP',5:'L',6:'EX'};
-const rarityIcons = {}; for(const k in ICON_MAP){ const im=new Image(); im.src=ICON_MAP[k]; rarityIcons[k]=im; }
+/* ===== Textures ===== */
+const zoneTex={}, cadreTex={};
+for(let i=1;i<=6;i++){ const im=new Image(); im.src='images/'+i+'.png'; im.onload=()=>draw(); zoneTex[i]=im; }
+cadreTex.gris=new Image(); cadreTex.gris.src='images/gris.png'; cadreTex.gris.onload=()=>draw();
+cadreTex.noir=new Image(); cadreTex.noir.src='images/noir.png'; cadreTex.noir.onload=()=>draw();
 
-// Outils
-const pt = v => v * DPI / 72;
-const $ = id => document.getElementById(id);
-
-// DOM
-const c = $('card'); const ctx = c.getContext('2d');
-c.width = CARD_W; c.height = CARD_H;
-
-const inputs = {
-  cadre: $('cadre'), rarete: $('rarete'), nom: $('nom'), pv: $('pv'), extension: $('extension'),
-  illustrateur: $('illustrateur'), numero: $('numero'), description: $('description'),
-  atk: $('atk'), atkspd: $('atkspd'), def: $('def'), defspd: $('defspd'), spd: $('spd'),
-  hexOn: $('hexOn'), hexFile: $('hexFile'), hexZoom: $('hexZoom'), hexZoomVal: $('hexZoomVal'),
-  file: $('file'), zoom: $('zoom'), zoomVal: $('zoomVal'), export: $('export'), clear: $('clear'), resetImg: $('resetImg')
-};
-
-// États images
-let img=null; let imgPos={x:CARD_W/2,y:CARD_H/2}; let imgScale=1;
-let hexImg=null; let hexScale=1; let hexPos=null; let hexImgOffset={x:0,y:0};
-
-// ===== Helpers dessin =====
-function drawFrame(color){
-  if(!color) return;
-  ctx.fillStyle=color;
-  ctx.fillRect(0,0,CARD_W,BORDER);
-  ctx.fillRect(0,CARD_H-BORDER,CARD_W,BORDER);
-  ctx.fillRect(0,0,BORDER,CARD_H);
-  ctx.fillRect(CARD_W-BORDER,0,BORDER,CARD_H);
-}
-function drawHorizontalBar(color,y){
-  if(!color) return;
-  ctx.fillStyle=color;
-  ctx.fillRect(BORDER, y-BORDER, CARD_W-2*BORDER, BORDER);
-}
-// Compartiments : biseau en BAS (gauche bas-droit / droit bas-gauche)
-function compartmentLeft(x,y,w,h, notchX, notchY, color){
-  ctx.beginPath();
-  ctx.moveTo(x, y);                // haut-gauche
-  ctx.lineTo(x + w, y);            // haut-droit
-  ctx.lineTo(x + w, y + h - notchY); // descendre avant biseau
-  ctx.lineTo(x + w - notchX, y + h); // biseau bas-droit -> vers gauche
-  ctx.lineTo(x, y + h);            // bas-gauche
-  ctx.closePath();
-  ctx.fillStyle=color; ctx.fill();
-}
-function compartmentRight(x,y,w,h, notchX, notchY, color){
-  ctx.beginPath();
-  ctx.moveTo(x, y);                // haut-gauche
-  ctx.lineTo(x + w, y);            // haut-droit
-  ctx.lineTo(x + w, y + h);        // bas-droit
-  ctx.lineTo(x + notchX, y + h);   // biseau bas-gauche -> vers droite
-  ctx.lineTo(x, y + h - notchY);   // remonte un peu
-  ctx.closePath();
-  ctx.fillStyle=color; ctx.fill();
-}
-function drawTopCornerCaps(){
-  const t=BORDER;
-  ctx.fillStyle=COLORS.coinsNoirs;
-  // coin gauche
-  ctx.fillRect(0,0,t*4,t);
-  ctx.fillRect(0,0,t,t*4);
-  // coin droit
-  ctx.fillRect(CARD_W - t*4, 0, t*4, t);
-  ctx.fillRect(CARD_W - t, 0, t, t*4);
-}
-function drawHexagonBadge(cx, cy, diameter, strokeColor, strokeMM, innerImage, innerScale=1, innerOffset={x:0,y:0}){
-  const r = diameter/2;
-  const pts=[]; for(let i=0;i<6;i++){ const ang=Math.PI/6 + i*Math.PI/3; pts.push({x:cx+r*Math.cos(ang), y:cy+r*Math.sin(ang)}); }
-  ctx.save();
-  ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y); for(let i=1;i<6;i++) ctx.lineTo(pts[i].x, pts[i].y); ctx.closePath();
-  ctx.fillStyle='#fff'; ctx.fill();
-  ctx.lineWidth=strokeMM; ctx.strokeStyle=strokeColor; ctx.stroke();
-  if(innerImage && innerImage.complete && innerImage.naturalWidth){
-    ctx.save(); ctx.clip();
-    const box = diameter * 0.8 * innerScale;
-    const ix = cx - box/2 + innerOffset.x;
-    const iy = cy - box/2 + innerOffset.y;
-    ctx.drawImage(innerImage, ix, iy, box, box);
-    ctx.restore();
-  }
-  ctx.restore();
-}
-function wrapText(text,maxWidth){
-  const words=(text||'').split(/\s+/); const lines=[]; let line='';
-  for(const w of words){
-    const t=line?line+' '+w:w;
-    const m=ctx.measureText(t);
-    if(m.width>maxWidth && line){ lines.push(line); line=w; } else { line=t; }
-  }
-  if(line) lines.push(line);
-  return lines;
-}
-
-// ===== Interactions =====
-function setPreviewSize(){
-  const container=document.querySelector('.preview');
-  const maxW = Math.min(372, (container ? container.clientWidth : 372) - 20);
-  const cssW = Math.max(240, maxW);
-  c.style.width = cssW + 'px';
-  c.style.height = (cssW * 89 / 63) + 'px';
-}
+/* ===== Outils Canvas ===== */
+const $=id=>document.getElementById(id), pt=v=>v*DPI/72;
+const c=$('card'), ctx=c.getContext('2d'); c.width=CARD_W; c.height=CARD_H;
+function setPreviewSize(){ const container=document.querySelector('.preview'); const maxW=Math.min(372,(container?container.clientWidth:372)-20); const cssW=Math.max(240,maxW); c.style.width=cssW+'px'; c.style.height=(cssW*89/63)+'px'; }
 window.addEventListener('resize', setPreviewSize);
 
-// Image principale
-function loadImage(file){
-  const r=new FileReader();
-  r.onload=e=>{ const i=new Image(); i.onload=()=>{ img=i; imgScale=1; imgPos={x:CARD_W/2,y:CARD_H/2}; draw(); }; i.src=e.target.result; };
-  r.readAsDataURL(file);
-}
-inputs.file.addEventListener('change', e=>{ if(e.target.files && e.target.files[0]) loadImage(e.target.files[0]); });
+/* Images */
+let img=null, imgPos={x:CARD_W/2,y:CARD_H/2}, imgScale=1;
+let hexImg=null, hexScale=1, hexPos=null, hexImgOffset={x:0,y:0};
+
+/* DOM */
+const inputs={
+  cadre:$('cadre'), rarete:$('rarete'), nom:$('nom'), pv:$('pv'), extension:$('extension'),
+  illustrateur:$('illustrateur'), numero:$('numero'), description:$('description'),
+  atk:$('atk'), atkspd:$('atkspd'), def:$('def'), defspd:$('defspd'), spd:$('spd'),
+  file:$('file'), zoom:$('zoom'), zoomVal:$('zoomVal'), export:$('export'), clear:$('clear'), resetImg:$('resetImg'),
+  hexOn:$('hexOn'), hexFile:$('hexFile'), hexZoom:$('hexZoom'), hexZoomVal:$('hexZoomVal')
+};
+
+function loadImage(file){ const r=new FileReader(); r.onload=e=>{ const i=new Image(); i.onload=()=>{ img=i; imgScale=1; imgPos={x:CARD_W/2,y:CARD_H/2}; draw(); }; i.src=e.target.result; }; r.readAsDataURL(file); }
+inputs.file.addEventListener('change', e=>{ if(e.target.files&&e.target.files[0]) loadImage(e.target.files[0]); });
 inputs.resetImg.addEventListener('click', ()=>{ imgScale=1; imgPos={x:CARD_W/2,y:CARD_H/2}; draw(); });
+inputs.zoom.addEventListener('input', ()=>{ imgScale=parseFloat(inputs.zoom.value); inputs.zoomVal.textContent=Math.round(imgScale*100)+'%'; draw(); });
 
-// Image hexagone
-inputs.hexFile.addEventListener('change', e=>{
-  if(e.target.files && e.target.files[0]){
-    const R=new FileReader();
-    R.onload=ev=>{ const i=new Image(); i.onload=()=>{ hexImg=i; draw(); }; i.src=ev.target.result; };
-    R.readAsDataURL(e.target.files[0]);
-  }
-});
-inputs.hexZoom.addEventListener('input', ()=>{ hexScale=parseFloat(inputs.hexZoom.value); if(inputs.hexZoomVal) inputs.hexZoomVal.textContent=Math.round(hexScale*100)+'%'; draw(); });
+inputs.hexFile.addEventListener('change', e=>{ if(e.target.files&&e.target.files[0]){ const R=new FileReader(); R.onload=ev=>{ const i=new Image(); i.onload=()=>{ hexImg=i; draw(); }; i.src=ev.target.result; }; R.readAsDataURL(e.target.files[0]); } });
+inputs.hexZoom.addEventListener('input', ()=>{ hexScale=parseFloat(inputs.hexZoom.value); inputs.hexZoomVal.textContent=Math.round(hexScale*100)+'%'; draw(); });
 
-// Drag / Zoom selon la zone cliquée
+/* Drag & zoom — hex image vs image principale selon la zone cliquée */
 let dragging=false, dragStart={x:0,y:0}, startPos={x:0,y:0}, startHexOffset={x:0,y:0}, dragTarget='mainimg';
 c.addEventListener('pointerdown', e=>{
-  const rect=c.getBoundingClientRect(); const s=c.width/rect.width;
-  const px=(e.clientX-rect.left)*s, py=(e.clientY-rect.top)*s;
+  const rect=c.getBoundingClientRect(); const s=c.width/rect.width; const px=(e.clientX-rect.left)*s, py=(e.clientY-rect.top)*s;
   dragging=true; dragStart={x:px,y:py}; startPos={...imgPos}; startHexOffset={...hexImgOffset};
-  // déterminer si le clic est dans l'hexagone (cercle inscrit)
-  let insideHex=false;
-  if(inputs.hexOn.checked){
-    const innerX=BORDER, innerY=BORDER, innerW=CARD_W-2*BORDER, innerH=CARD_H-2*BORDER;
-    const zoneY = innerY + innerH - BLUE_H;
-    if(!hexPos){ const hexD0=10*MM; hexPos={ x:innerX+hexD0/2+1*MM, y:zoneY-hexD0/2-1*MM } }
-    const r= (10*MM)/2;
-    const dx=px-hexPos.x, dy=py-hexPos.y; insideHex=(dx*dx+dy*dy)<=r*r;
-  }
-  dragTarget = insideHex ? 'heximg' : 'mainimg';
+  // détection hex
+  const innerX=BORDER, innerY=BORDER, innerW=CARD_W-2*BORDER, innerH=CARD_H-2*BORDER; const zoneY=innerY+innerH-BLUE_H;
+  if(!hexPos){ const d=10*MM; hexPos={x:innerX+d/2+1*MM, y:zoneY-d/2-1*MM}; }
+  let inside=false; if(inputs.hexOn.checked){ const r=(10*MM)/2; const dx=px-hexPos.x, dy=py-hexPos.y; inside=(dx*dx+dy*dy)<=r*r; }
+  dragTarget = inside ? 'heximg' : 'mainimg';
   c.setPointerCapture(e.pointerId);
 });
 c.addEventListener('pointermove', e=>{
-  if(!dragging) return;
-  const rect=c.getBoundingClientRect(); const s=c.width/rect.width;
-  const px=(e.clientX-rect.left)*s, py=(e.clientY-rect.top)*s;
+  if(!dragging) return; const rect=c.getBoundingClientRect(); const s=c.width/rect.width; const px=(e.clientX-rect.left)*s, py=(e.clientY-rect.top)*s;
   const dx=px-dragStart.x, dy=py-dragStart.y;
-  if(dragTarget==='heximg'){
-    hexImgOffset = {x:startHexOffset.x + dx, y:startHexOffset.y + dy};
-  } else {
-    if(!img) return;
-    imgPos = {x:startPos.x + dx, y:startPos.y + dy};
-  }
+  if(dragTarget==='heximg'){ hexImgOffset={x:startHexOffset.x+dx,y:startHexOffset.y+dy}; }
+  else { if(!img) return; imgPos={x:startPos.x+dx,y:startPos.y+dy}; }
   draw();
 });
-c.addEventListener('pointerup', e=>{ dragging=false; try{ c.releasePointerCapture(e.pointerId); }catch(_){} });
+c.addEventListener('pointerup', e=>{ dragging=false; try{c.releasePointerCapture(e.pointerId);}catch(_){} });
 c.addEventListener('wheel', e=>{
-  e.preventDefault();
-  const rect=c.getBoundingClientRect(); const s=c.width/rect.width;
-  const px=(e.clientX-rect.left)*s, py=(e.clientY-rect.top)*s;
+  e.preventDefault(); const rect=c.getBoundingClientRect(); const s=c.width/rect.width; const px=(e.clientX-rect.left)*s, py=(e.clientY-rect.top)*s;
   const delta=-e.deltaY/1000;
-  // au-dessus de l'hexagone ?
-  let insideHex=false;
-  if(inputs.hexOn.checked && hexPos){
-    const r=(10*MM)/2; const dx=px-hexPos.x, dy=py-hexPos.y; insideHex=(dx*dx+dy*dy)<=r*r;
-  }
-  if(insideHex){
-    hexScale = Math.min(2.5, Math.max(0.2, hexScale*(1+delta)));
-    inputs.hexZoom.value = hexScale.toFixed(2); if(inputs.hexZoomVal) inputs.hexZoomVal.textContent=Math.round(hexScale*100)+'%';
-  } else {
-    if(!img) return;
-    imgScale = Math.min(3, Math.max(0.2, imgScale*(1+delta)));
-    inputs.zoom.value = imgScale.toFixed(2); if(inputs.zoomVal) inputs.zoomVal.textContent=Math.round(imgScale*100)+'%';
-  }
+  let inside=false; if(hexPos){ const r=(10*MM)/2; const dx=px-hexPos.x, dy=py-hexPos.y; inside=(dx*dx+dy*dy)<=r*r; }
+  if(inside){ hexScale=Math.min(2.5,Math.max(0.2,hexScale*(1+delta))); inputs.hexZoom.value=hexScale.toFixed(2); inputs.hexZoomVal.textContent=Math.round(hexScale*100)+'%'; }
+  else { if(!img) return; imgScale=Math.min(3,Math.max(0.2,imgScale*(1+delta))); inputs.zoom.value=imgScale.toFixed(2); inputs.zoomVal.textContent=Math.round(imgScale*100)+'%'; }
   draw();
 },{passive:false});
-inputs.zoom.addEventListener('input', ()=>{ imgScale=parseFloat(inputs.zoom.value); if(inputs.zoomVal) inputs.zoomVal.textContent=Math.round(imgScale*100)+'%'; draw(); });
 
-// Export & reset
-inputs.export.addEventListener('click', ()=>{ const a=document.createElement('a'); a.href=c.toDataURL('image/png'); a.download=`carte_tcg_${Date.now()}.png`; a.click(); });
-inputs.clear.addEventListener('click', ()=>{
-  ['nom','pv','extension','illustrateur','numero','description','atk','atkspd','def','defspd','spd'].forEach(id=>$(id).value='');
-  inputs.rarete.value='1'; inputs.cadre.value='gris'; img=null; hexImg=null; hexScale=1; hexImgOffset={x:0,y:0};
-  draw();
-});
+inputs.export.addEventListener('click', ()=>{ const a=document.createElement('a'); a.href=c.toDataURL('image/png'); a.download='carte_tcg_'+Date.now()+'.png'; a.click(); });
+inputs.clear.addEventListener('click', ()=>{ ['nom','pv','extension','illustrateur','numero','description','atk','atkspd','def','defspd','spd'].forEach(id=>$(id).value=''); inputs.rarete.value='1'; inputs.cadre.value='gris'; img=null; hexImg=null; hexScale=1; hexImgOffset={x:0,y:0}; draw(); });
+['input','change'].forEach(evt=>{ ['cadre','rarete','nom','pv','extension','illustrateur','numero','description','atk','atkspd','def','defspd','spd','hexOn'].forEach(id=>$(id).addEventListener(evt, draw)); });
 
-// Redessiner sur chaque modif
-['input','change'].forEach(evt=>{ Object.values(inputs).forEach(el=>{ if(el && el.tagName) el.addEventListener(evt, draw); }); });
+/* Frame helpers (accept either color string or pattern) */
+function getPattern(img){ if(!img || !img.complete || !img.naturalWidth) return null; return ctx.createPattern(img,'repeat'); }
+function drawFrame(style){ if(!style) return; ctx.fillStyle=style; ctx.fillRect(0,0,CARD_W,BORDER); ctx.fillRect(0,CARD_H-BORDER,CARD_W,BORDER); ctx.fillRect(0,0,BORDER,CARD_H); ctx.fillRect(CARD_W-BORDER,0,BORDER,CARD_H); }
+function drawHorizontalBar(style,y){ if(!style) return; ctx.fillStyle=style; ctx.fillRect(BORDER, y-BORDER, CARD_W-2*BORDER, BORDER); }
+function compartmentLeft(x,y,w,h, notchX, notchY, style){ ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x+w,y); ctx.lineTo(x+w,y+h-notchY); ctx.lineTo(x+w-notchX,y+h); ctx.lineTo(x,y+h); ctx.closePath(); ctx.fillStyle=style; ctx.fill(); }
+function compartmentRight(x,y,w,h, notchX, notchY, style){ ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x+w,y); ctx.lineTo(x+w,y+h); ctx.lineTo(x+notchX,y+h); ctx.lineTo(x,y+h-notchY); ctx.closePath(); ctx.fillStyle=style; ctx.fill(); }
+function drawTopCornerCaps(){ const t=BORDER; ctx.fillStyle=COLORS.coins; ctx.fillRect(0,0,t*4,t); ctx.fillRect(0,0,t,t*4); ctx.fillRect(CARD_W-t*4,0,t*4,t); ctx.fillRect(CARD_W-t,0,t,t*4); }
+function drawZoneTexture(img,x,y,w,h,alpha){ if(!img || !img.complete || !img.naturalWidth){ ctx.save(); ctx.globalAlpha=alpha; ctx.fillStyle='#ccc'; ctx.fillRect(x,y,w,h); ctx.restore(); return; } ctx.save(); ctx.globalAlpha=alpha; const s=Math.max(w/img.width, h/img.height); const dw=img.width*s, dh=img.height*s; const dx=x+(w-dw)/2, dy=y+(h-dh)/2; ctx.drawImage(img, dx,dy,dw,dh); ctx.restore(); }
 
-// ===== Dessin principal =====
+/* Icônes rareté */
+const ICON_MAP={1:'images/C.png',2:'images/PC.png',3:'images/R.png',4:'images/EP.png',5:'images/L.png',6:'images/EX.png'};
+const ICON_LABEL={1:'C',2:'PC',3:'R',4:'EP',5:'L',6:'EX'};
+const rarityIcons={}; for(const k in ICON_MAP){ const im=new Image(); im.src=ICON_MAP[k]; rarityIcons[k]=im; }
+
+/* Rendu principal */
 function draw(){
-  try{
-    ctx.clearRect(0,0,CARD_W,CARD_H);
-    // fond carte
-    ctx.fillStyle='#fff'; ctx.fillRect(0,0,CARD_W,CARD_H);
+  ctx.clearRect(0,0,CARD_W,CARD_H);
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,CARD_W,CARD_H);
 
-    // image arrière-plan
-    if(img){
-      const cover = Math.max(CARD_W/img.width, CARD_H/img.height);
-      const s = cover * imgScale; const w=img.width*s, h=img.height*s;
-      ctx.drawImage(img, imgPos.x-w/2, imgPos.y-h/2, w, h);
-    }
+  if(img){ const cover=Math.max(CARD_W/img.width, CARD_H/img.height); const s=cover*imgScale; const w=img.width*s, h=img.height*s; ctx.drawImage(img, imgPos.x-w/2, imgPos.y-h/2, w, h); }
 
-    // cadres
-    const r = parseInt(inputs.rarete.value, 10);
-    const cadreColor = COLORS.cadre[ inputs.cadre.value ];
-    drawFrame(cadreColor);
+  const r=parseInt(inputs.rarete.value,10);
+  const cadreSel=inputs.cadre.value;
+  const cadreColor=COLORS.cadre[cadreSel];
+  const cadreStyle = cadreColor ? (getPattern(cadreTex[cadreSel]) || cadreColor) : null;
 
-    // zone utile
-    const innerX=BORDER, innerY=BORDER, innerW=CARD_W-2*BORDER, innerH=CARD_H-2*BORDER;
+  // Cadre
+  drawFrame(cadreStyle);
 
-    // compartiments (couleur = cadre, sinon noir)
-    const compColor = cadreColor ? cadreColor : '#0D0D0D';
-    const boxY = innerY;
-    const leftBoxX = innerX, rightBoxX = innerX + innerW - BOX_W;
-    compartmentLeft(leftBoxX, boxY, BOX_W, BOX_H, NOTCH_SIDE, NOTCH_TOP, compColor);
-    compartmentRight(rightBoxX, boxY, BOX_W, BOX_H, NOTCH_SIDE, NOTCH_TOP, compColor);
-    // texte blanc dans compartiments
-    ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.font=`${pt(10)}px sans-serif`; ctx.fillStyle='#fff';
-    ctx.fillText((inputs.extension.value||'').trim(), leftBoxX + BOX_W/2, boxY + BOX_H/2);
-    ctx.fillText((inputs.pv.value||'').trim(),       rightBoxX + BOX_W/2, boxY + BOX_H/2);
+  // Compartiments (couleur = cadre; si cadre invisible => noir/texture noir)
+  const innerX=BORDER, innerY=BORDER, innerW=CARD_W-2*BORDER, innerH=CARD_H-2*BORDER;
+  const compStyle = cadreStyle ? cadreStyle : (getPattern(cadreTex.noir) || '#0D0D0D');
+  const boxY=innerY, leftBoxX=innerX, rightBoxX=innerX+innerW-BOX_W;
+  compartmentLeft(leftBoxX, boxY, BOX_W, BOX_H, NOTCH_SIDE, NOTCH_TOP, compStyle);
+  compartmentRight(rightBoxX, boxY, BOX_W, BOX_H, NOTCH_SIDE, NOTCH_TOP, compStyle);
+  ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.font=`${pt(10)}px sans-serif`;
+  ctx.fillText((inputs.extension.value||'').trim(), leftBoxX+BOX_W/2, boxY+BOX_H/2);
+  ctx.fillText((inputs.pv.value||'').trim(), rightBoxX+BOX_W/2, boxY+BOX_H/2);
 
-    // coins noirs (L) uniquement r>=4 ET cadre visible
-    if(r>=4 && cadreColor){ drawTopCornerCaps(); }
+  // Coins “L” pour r>=4 seulement si cadre visible
+  if(r>=4 && cadreStyle){ drawTopCornerCaps(); }
 
-    // zone couleur
-    const zoneX=innerX, zoneW=innerW, zoneH=BLUE_H, zoneY=innerY+innerH-zoneH;
-    ctx.save();
-    ctx.globalAlpha = (r>=4 ? 0.85 : 1);   // transparence pour 4-6
-    ctx.fillStyle = COLORS.zoneParRareté[r] || '#93BF34';
-    ctx.fillRect(zoneX, zoneY, zoneW, zoneH);
+  // Zone (texture si présente; sinon couleur)
+  const zoneX=innerX, zoneW=innerW, zoneH=BLUE_H, zoneY=innerY+innerH-zoneH;
+  const alpha = (r>=4 ? 0.85 : 1);
+  const zImg = zoneTex[r];
+  if(zImg && zImg.complete && zImg.naturalWidth){ drawZoneTexture(zImg, zoneX, zoneY, zoneW, zoneH, alpha); }
+  else { ctx.save(); ctx.globalAlpha=alpha; ctx.fillStyle=COLORS.zone[r]||'#93BF34'; ctx.fillRect(zoneX, zoneY, zoneW, zoneH); ctx.restore(); }
+  drawHorizontalBar(cadreStyle, zoneY);
+
+  // Hexagone (fixe), image interne déplaçable/zoomable
+  if(inputs.hexOn.checked){
+    if(!hexPos){ const d=10*MM; hexPos={x:innerX + d/2 + 1*MM, y: zoneY - d/2 - 1*MM}; }
+    // Bord (pattern si dispo sinon couleur)
+    const stroke = (r<=2 ? (cadreTex.gris.complete? ctx.createPattern(cadreTex.gris,'repeat') : '#515859')
+                         : (cadreTex.noir.complete? ctx.createPattern(cadreTex.noir,'repeat') : '#0D0D0D'));
+    const d=10*MM, rr=d/2, pts=[]; for(let i=0;i<6;i++){ const ang=Math.PI/6 + i*Math.PI/3; pts.push({x:hexPos.x+rr*Math.cos(ang), y:hexPos.y+rr*Math.sin(ang)}); }
+    ctx.save(); ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y); for(let i=1;i<6;i++) ctx.lineTo(pts[i].x,pts[i].y); ctx.closePath(); ctx.fillStyle='#fff'; ctx.fill();
+    ctx.lineWidth=1*MM; ctx.strokeStyle=(typeof stroke==='string'?stroke:'#0D0D0D'); ctx.stroke();
+    if(hexImg && hexImg.complete && hexImg.naturalWidth){ ctx.save(); ctx.clip(); const box=d*0.8*hexScale; const ix=hexPos.x-box/2+hexImgOffset.x, iy=hexPos.y-box/2+hexImgOffset.y; ctx.drawImage(hexImg, ix, iy, box, box); ctx.restore(); }
     ctx.restore();
-    // barre horizontale du cadre juste au-dessus
-    drawHorizontalBar(cadreColor, zoneY);
-
-    // hexagone (fixe), image interne déplaçable/zoomable
-    if(inputs.hexOn.checked){
-      if(!hexPos){ const d=10*MM; hexPos={x:innerX + d/2 + 1*MM, y: zoneY - d/2 - 1*MM}; }
-      const stroke = (r<=2 ? '#515859' : '#0D0D0D');
-      drawHexagonBadge(hexPos.x, hexPos.y, 10*MM, stroke, 1*MM, hexImg, hexScale, hexImgOffset);
-    }
-
-    // textes
-    const pad = 2*MM;
-    // nom
-    ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillStyle='#0D0D0D'; ctx.font=`700 ${pt(14)}px sans-serif`;
-    const nameY = zoneY + pad; ctx.fillText((inputs.nom.value||'').toUpperCase(), zoneX + zoneW/2, nameY);
-    // description
-    ctx.font = `${pt(10)}px sans-serif`; ctx.fillStyle='#0D0D0D';
-    const descTop = nameY + pt(14) + 1*MM; const maxWidth = zoneW - pad*2;
-    const lines = wrapText(inputs.description.value, maxWidth); const lh = pt(10)*1.25; let y = descTop;
-    for(const line of lines){ ctx.fillText(line, zoneX + zoneW/2, y); y += lh; }
-
-    // stats 8 pt sous la description
-    const statsTop = y + 1*MM; ctx.font = `${pt(8)}px sans-serif`; ctx.fillStyle='#0D0D0D';
-    ctx.textAlign='left';  ctx.fillText(`Attaque : ${ (inputs.atk.value||'') }`, zoneX+pad, statsTop); ctx.fillText(`Vit.Attaque : ${ (inputs.atkspd.value||'') }`, zoneX+pad, statsTop+pt(8)*1.25);
-    ctx.textAlign='right'; ctx.fillText(`Défense : ${ (inputs.def.value||'') }`, zoneX+zoneW-pad, statsTop); ctx.fillText(`Vit.Défense : ${ (inputs.defspd.value||'') }`, zoneX+zoneW-pad, statsTop+pt(8)*1.25);
-
-    // bas de carte : illu (g), numéro + icône (d), vitesse (c)
-    const m=1*MM; ctx.textBaseline='alphabetic';
-    ctx.textAlign='left'; ctx.font=`${pt(6)}px sans-serif`; ctx.fillStyle='#0D0D0D';
-    ctx.fillText((inputs.illustrateur.value||'').trim(), BORDER+m, CARD_H-BORDER-m);
-
-    ctx.textAlign='right';
-    const num=(inputs.numero.value||'').trim(); const icon=rarityIcons[r]; const iconSize=pt(6); const gap=4;
-    let numX = CARD_W - BORDER - m;
-    if(icon && icon.complete && icon.naturalWidth){
-      const ix = CARD_W - BORDER - m - iconSize;
-      const iy = CARD_H - BORDER - m - iconSize + pt(6)*0.25;
-      ctx.drawImage(icon, ix, iy, iconSize, iconSize);
-      numX = ix - gap;
-    } else {
-      // fallback carré blanc avec code
-      const code = ICON_LABEL[r]; const ix=CARD_W-BORDER-m-iconSize; const iy=CARD_H-BORDER-m-iconSize + pt(6)*0.25;
-      ctx.save(); ctx.fillStyle='#fff'; ctx.fillRect(ix,iy,iconSize,iconSize); ctx.strokeStyle='#00000055'; ctx.lineWidth=1; ctx.strokeRect(ix,iy,iconSize,iconSize);
-      ctx.fillStyle='#0D0D0D'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.font=`bold ${pt(8)}px sans-serif`; ctx.fillText(code, ix+iconSize/2, iy+iconSize/2); ctx.restore();
-      numX = ix - gap;
-    }
-    ctx.textAlign='right'; ctx.font=`${pt(6)}px sans-serif`; ctx.fillStyle='#0D0D0D';
-    ctx.fillText(num, numX, CARD_H - BORDER - m);
-
-    const spd=(inputs.spd.value||''); if(spd){ ctx.textAlign='center'; ctx.font=`${pt(8)}px sans-serif`; ctx.fillText(`Vitesse : ${spd}`, CARD_W/2, CARD_H-BORDER-m); }
-
-  }catch(err){
-    // Afficher l'erreur sur le canvas
-    ctx.clearRect(0,0,CARD_W,CARD_H);
-    ctx.fillStyle='#fff'; ctx.fillRect(0,0,CARD_W,CARD_H);
-    ctx.strokeStyle='red'; ctx.lineWidth=6; ctx.strokeRect(12,12,CARD_W-24,CARD_H-24);
-    ctx.fillStyle='red'; ctx.font='16px monospace'; ctx.fillText('Erreur: '+err.message, 24, 40);
-    console.error(err);
   }
+
+  // Textes
+  const pad=2*MM, nameY=innerY+innerH-BLUE_H+pad;
+  ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillStyle='#0D0D0D'; ctx.font=`700 ${pt(14)}px sans-serif`;
+  ctx.fillText((inputs.nom.value||'').toUpperCase(), innerX+innerW/2, nameY);
+  ctx.font=`${pt(10)}px sans-serif`; ctx.fillStyle='#0D0D0D';
+  const descTop=nameY+pt(14)+1*MM; const maxW=innerW-pad*2; const words=(inputs.description.value||''); const lines=[]; let line='';
+  words.split(/\s+/).forEach(w=>{ const t=line?line+' '+w:w; if(ctx.measureText(t).width>maxW && line){ lines.push(line); line=w; } else { line=t; } });
+  if(line) lines.push(line); let y=descTop; const lh=pt(10)*1.25; lines.forEach(L=>{ ctx.fillText(L, innerX+innerW/2, y); y+=lh; });
+
+  // Stats
+  const statsTop=y+1*MM; ctx.font=`${pt(8)}px sans-serif`; ctx.fillStyle='#0D0D0D';
+  ctx.textAlign='left';  ctx.fillText(`Attaque : ${(inputs.atk.value||'')}`, innerX+pad, statsTop); ctx.fillText(`Vit.Attaque : ${(inputs.atkspd.value||'')}`, innerX+pad, statsTop+pt(8)*1.25);
+  ctx.textAlign='right'; ctx.fillText(`Défense : ${(inputs.def.value||'')}`, innerX+innerW-pad, statsTop); ctx.fillText(`Vit.Défense : ${(inputs.defspd.value||'')}`, innerX+innerW-pad, statsTop+pt(8)*1.25);
+
+  // Bas : illu / numéro + icône / vitesse
+  const m=1*MM; ctx.textBaseline='alphabetic';
+  ctx.textAlign='left'; ctx.font=`${pt(6)}px sans-serif`; ctx.fillText((inputs.illustrateur.value||'').trim(), BORDER+m, CARD_H-BORDER-m);
+  ctx.textAlign='right'; const num=(inputs.numero.value||'').trim(); const icon=rarityIcons[r]; const iconSize=pt(6); const gap=4;
+  let numX=CARD_W-BORDER-m;
+  if(icon && icon.complete && icon.naturalWidth){ const ix=CARD_W-BORDER-m-iconSize; const iy=CARD_H-BORDER-m-iconSize+pt(6)*0.25; ctx.drawImage(icon, ix, iy, iconSize, iconSize); numX=ix-gap; }
+  else { const code=ICON_LABEL[r]; const ix=CARD_W-BORDER-m-iconSize; const iy=CARD_H-BORDER-m-iconSize+pt(6)*0.25; ctx.save(); ctx.fillStyle='#fff'; ctx.fillRect(ix,iy,iconSize,iconSize); ctx.strokeStyle='#00000055'; ctx.strokeRect(ix,iy,iconSize,iconSize); ctx.fillStyle='#0D0D0D'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.font=`bold ${pt(8)}px sans-serif`; ctx.fillText(code, ix+iconSize/2, iy+iconSize/2); ctx.restore(); numX=ix-gap; }
+  ctx.textAlign='right'; ctx.font=`${pt(6)}px sans-serif`; ctx.fillText(num, numX, CARD_H-BORDER-m);
+  const spd=(inputs.spd.value||''); if(spd){ ctx.textAlign='center'; ctx.font=`${pt(8)}px sans-serif`; ctx.fillText(`Vitesse : ${spd}`, CARD_W/2, CARD_H-BORDER-m); }
 }
 
-// Premier rendu + UI responsive
+/* Premier rendu */
 function boot(){ setPreviewSize(); draw(); }
 if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', boot); } else { boot(); }
-
 </script>
 </body>
 </html>

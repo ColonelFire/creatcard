@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Générateur TCG — invisible sans barre/coins + icônes PNG</title>
+<title>Générateur TCG – stats fixes</title>
 <style>
   :root{ --bg:#8C8C8C; --ui:#0b3890; --ui2:#0f44a9; --text:#ECF2FF; --shadow: rgba(0,0,0,.35); }
   *{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,Helvetica,sans-serif}
@@ -116,7 +116,7 @@
       <div class="row" style="margin-top:8px">
         <div>
           <label for="spd">Vitesse (bas de carte)</label>
-          <input id="spd" type="number" placeholder="30" />
+          <input id="spd" type="number" placeholder="20" />
         </div>
       </div>
     </div>
@@ -160,8 +160,8 @@
       <button id="clear" class="secondary">Effacer tout</button>
     </div>
 
-    <div class="foot">Icônes de rareté: <code>images/C.png</code>, <code>PC.png</code>, <code>R.png</code>, <code>EP.png</code>, <code>L.png</code>, <code>EX.png</code>.  
-    Textures de zone: <code>images/1.png</code>…<code>images/6.png</code>.</div>
+    <div class="foot">Icônes rareté: <code>images/C.png</code>, <code>PC.png</code>, <code>R.png</code>, <code>EP.png</code>, <code>L.png</code>, <code>EX.png</code>.  
+    Textures de rareté: <code>images/1.png</code>…<code>images/6.png</code>.</div>
   </div>
 
   <div class="preview">
@@ -189,12 +189,7 @@ for(let i=1;i<=6;i++){ const im=new Image(); im.src='images/'+i+'.png'; im.onloa
 /* Icônes de rareté — PRELOAD */
 const ICON_FILES={1:'C.png',2:'PC.png',3:'R.png',4:'EP.png',5:'L.png',6:'EX.png'};
 const rarityIcons={};
-Object.keys(ICON_FILES).forEach(k=>{
-  const im=new Image();
-  im.src='images/'+ICON_FILES[k];
-  im.onload=()=>draw();
-  rarityIcons[k]=im;
-});
+Object.keys(ICON_FILES).forEach(k=>{ const im=new Image(); im.src='images/'+ICON_FILES[k]; im.onload=()=>draw(); rarityIcons[k]=im; });
 
 /* ==== Canvas ==== */
 const $=id=>document.getElementById(id), pt=v=>v*DPI/72;
@@ -257,8 +252,7 @@ c.addEventListener('wheel', e=>{
 inputs.export.addEventListener('click', ()=>{ const a=document.createElement('a'); a.href=c.toDataURL('image/png'); a.download='carte_tcg_'+Date.now()+'.png'; a.click(); });
 inputs.clear.addEventListener('click', ()=>{
   ['nom','pv','extension','illustrateur','numero','description','atk','atkspd','def','defspd','spd'].forEach(id=>$(id).value='');
-  inputs.rarete.value='1';
-  inputs.cadre.value='noir';
+  inputs.rarete.value='1'; inputs.cadre.value='noir';
   img=null; hexImg=null; hexScale=1; hexImgOffset={x:0,y:0}; zoneScale=1;
   inputs.zoneScale.value='1'; inputs.zoneScaleVal.textContent='100%';
   draw();
@@ -297,29 +291,27 @@ function draw(){
 
   const r=parseInt(inputs.rarete.value,10);
   const userCadre = inputs.cadre.value;
-  const cadreSel  = (r<=3) ? 'noir' : userCadre;      // force noir sur 1–3
+  const cadreSel  = (r<=3) ? 'noir' : userCadre;      // 1–3 forcé noir
 
-  // verrou UI si 1–3
   inputs.cadre.disabled = (r<=3);
   if(r<=3 && inputs.cadre.value!=='noir') inputs.cadre.value='noir';
 
   const cadreStyle = (cadreSel==='noir') ? '#0D0D0D' : null;
 
-  // cadre (seulement si non invisible)
+  // cadre
   drawFrame(cadreStyle);
 
-  // compartiments (si cadre invisible on garde noir)
+  // compartiments (noirs si cadre invisible)
   const innerX=BORDER, innerY=BORDER, innerW=CARD_W-2*BORDER, innerH=CARD_H-2*BORDER;
   const compStyle = (cadreStyle || '#0D0D0D');
   const boxY=innerY, leftBoxX=innerX, rightBoxX=innerX+innerW-BOX_W;
   compartmentLeft(leftBoxX, boxY, BOX_W, BOX_H, NOTCH_SIDE, NOTCH_TOP, compStyle);
   compartmentRight(rightBoxX, boxY, BOX_W, BOX_H, NOTCH_SIDE, NOTCH_TOP, compStyle);
-  // libellés
   ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.font=`${pt(10)}px sans-serif`;
   ctx.fillText((inputs.extension.value||'').trim(), leftBoxX+BOX_W/2, boxY+BOX_H/2);
   ctx.fillText((inputs.pv.value||'').trim(),       rightBoxX+BOX_W/2, boxY+BOX_H/2);
 
-  // coins L : uniquement r>=4 ET cadre visible
+  // coins L : r>=4 et cadre visible
   if(r>=4 && cadreSel!=='invisible'){ drawTopCornerCaps(); }
 
   // zone rareté
@@ -329,7 +321,7 @@ function draw(){
   if(zImg && zImg.complete && zImg.naturalWidth){ drawZoneTextureClipped(zImg, zoneX, zoneY, zoneW, zoneH, alpha, zoneScale); }
   else { ctx.save(); ctx.globalAlpha=alpha; ctx.fillStyle=COLORS.zone[r]; ctx.fillRect(zoneX, zoneY, zoneW, zoneH); ctx.restore(); }
 
-  // barre horizontale : seulement si cadre visible
+  // barre horizontale si cadre visible
   if(cadreSel!=='invisible'){ drawHorizontalBar('#0D0D0D', zoneY); }
 
   // hexagone — toujours noir
@@ -342,40 +334,55 @@ function draw(){
     ctx.restore();
   }
 
-  // textes
-  const pad=2*MM, nameY=innerY+innerH-BLUE_H+pad;
-  ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillStyle='#0D0D0D'; ctx.font=`700 ${pt(14)}px sans-serif`;
-  ctx.fillText((inputs.nom.value||'').toUpperCase(), innerX+innerW/2, nameY);
-  ctx.font=`${pt(10)}px sans-serif`;
-  const descTop=nameY+pt(14)+1*MM; const maxW=innerW-pad*2; const words=(inputs.description.value||''); const lines=[]; let line='';
-  words.split(/\s+/).forEach(w=>{ const t=line?line+' '+w:w; if(ctx.measureText(t).width>maxW && line){ lines.push(line); line=w; } else { line=t; } });
-  if(line) lines.push(line); let y=descTop; const lh=pt(10)*1.25; lines.forEach(L=>{ ctx.fillText(L, innerX+innerW/2, y); y+=lh; });
+  /* ======== TEXTES – STATS À NIVEAU FIXE ======== */
+  const pad = 2*MM;
 
-  // stats
-  const statsTop=y+1*MM; ctx.font=`${pt(8)}px sans-serif`; ctx.fillStyle='#0D0D0D';
-  ctx.textAlign='left';  ctx.fillText(`Attaque : ${(inputs.atk.value||'')}`, innerX+pad, statsTop); ctx.fillText(`Vit.Attaque : ${(inputs.atkspd.value||'')}`, innerX+pad, statsTop+pt(8)*1.25);
-  ctx.textAlign='right'; ctx.fillText(`Défense : ${(inputs.def.value||'')}`, innerX+innerW-pad, statsTop); ctx.fillText(`Vit.Défense : ${(inputs.defspd.value||'')}`, innerX+innerW-pad, statsTop+pt(8)*1.25);
+  // 1) Titre (en haut de la zone)
+  const titleY = zoneY + pad;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillStyle = '#0D0D0D';
+  ctx.font = `700 ${pt(14)}px sans-serif`;
+  ctx.fillText((inputs.nom.value || '').toUpperCase(), innerX + innerW/2, titleY);
 
-  // bas : illu / icône / numéro / vitesse
+  // 2) Description (2 lignes max + ellipsis)
+  const descTop = titleY + pt(14) + 1*MM;
+  ctx.font = `${pt(10)}px sans-serif`;
+  const maxW = innerW - pad*2;
+  const raw = (inputs.description.value || '').trim();
+  const words = raw.length ? raw.split(/\s+/) : [];
+  const lines = [];
+  let line = '';
+  for (const w of words) {
+    const test = line ? line + ' ' + w : w;
+    if (ctx.measureText(test).width > maxW && line) { lines.push(line); line = w; }
+    else { line = test; }
+  }
+  if (line) lines.push(line);
+  const maxLines = 2;
+  for (let i = 0; i < Math.min(lines.length, maxLines); i++) {
+    const txt = (i === maxLines - 1 && lines.length > maxLines) ? (lines[i] + '…') : lines[i];
+    ctx.fillText(txt, innerX + innerW/2, descTop + i * pt(10) * 1.25);
+  }
+
+  // 3) Stats : position FIXE sous ces 2 lignes
+  const statsTop = descTop + maxLines * pt(10) * 1.25 + 2*MM;
+  ctx.font = `${pt(8)}px sans-serif`;
+  ctx.fillStyle = '#0D0D0D';
+  ctx.textAlign = 'left';
+  ctx.fillText(`Attaque : ${(inputs.atk.value || '')}`,        innerX + pad, statsTop);
+  ctx.fillText(`Vit.Attaque : ${(inputs.atkspd.value || '')}`, innerX + pad, statsTop + pt(8) * 1.25);
+  ctx.textAlign = 'right';
+  ctx.fillText(`Défense : ${(inputs.def.value || '')}`,        innerX + innerW - pad, statsTop);
+  ctx.fillText(`Vit.Défense : ${(inputs.defspd.value || '')}`, innerX + innerW - pad, statsTop + pt(8) * 1.25);
+
+  // Bas : illu / icône PNG / numéro / vitesse
   const m=1*MM; ctx.textBaseline='alphabetic';
   ctx.textAlign='left'; ctx.font=`${pt(6)}px sans-serif`; ctx.fillText((inputs.illustrateur.value||'').trim(), BORDER+m, CARD_H-BORDER-m);
 
-  // icône de rareté (PNG si présent)
-  const icon=rarityIcons[r];
-  const iconSize=pt(6), gap=4;
-  let numX=CARD_W-BORDER-m;
-  if(icon && icon.complete && icon.naturalWidth){
-    const ix=CARD_W-BORDER-m-iconSize, iy=CARD_H-BORDER-m-iconSize+pt(6)*0.25;
-    ctx.drawImage(icon, ix, iy, iconSize, iconSize);
-    numX = ix - gap;
-  } else {
-    // fallback texte
-    const ix=CARD_W-BORDER-m-iconSize, iy=CARD_H-BORDER-m-iconSize+pt(6)*0.25;
-    ctx.save(); ctx.fillStyle='#fff'; ctx.fillRect(ix,iy,iconSize,iconSize); ctx.strokeStyle='#00000055'; ctx.strokeRect(ix,iy,iconSize,iconSize);
-    ctx.fillStyle='#0D0D0D'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.font=`bold ${pt(8)}px sans-serif`;
-    ctx.fillText({1:'C',2:'PC',3:'R',4:'EP',5:'L',6:'EX'}[r]||'C', ix+iconSize/2, iy+iconSize/2); ctx.restore();
-    numX = ix - gap;
-  }
+  const icon=rarityIcons[r], iconSize=pt(6), gap=4; let numX=CARD_W-BORDER-m;
+  if(icon && icon.complete && icon.naturalWidth){ const ix=CARD_W-BORDER-m-iconSize, iy=CARD_H-BORDER-m-iconSize+pt(6)*0.25; ctx.drawImage(icon, ix, iy, iconSize, iconSize); numX = ix - gap; }
+  else { const ix=CARD_W-BORDER-m-iconSize, iy=CARD_H-BORDER-m-iconSize+pt(6)*0.25; ctx.save(); ctx.fillStyle='#fff'; ctx.fillRect(ix,iy,iconSize,iconSize); ctx.strokeStyle='#00000055'; ctx.strokeRect(ix,iy,iconSize,iconSize); ctx.fillStyle='#0D0D0D'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.font=`bold ${pt(8)}px sans-serif`; ctx.fillText({1:'C',2:'PC',3:'R',4:'EP',5:'L',6:'EX'}[r]||'C', ix+iconSize/2, iy+iconSize/2); ctx.restore(); numX = ix - gap; }
   ctx.textAlign='right'; ctx.font=`${pt(6)}px sans-serif`; ctx.fillText((inputs.numero.value||'').trim(), numX, CARD_H-BORDER-m);
 
   const spd=(inputs.spd.value||''); if(spd){ ctx.textAlign='center'; ctx.font=`${pt(8)}px sans-serif`; ctx.fillText(`Vitesse : ${spd}`, CARD_W/2, CARD_H-BORDER-m); }

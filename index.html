@@ -146,7 +146,21 @@
             <input id="hexFile" type="file" accept="image/*" />
           </div>
         </div>
-        <p class="help">Bord 1&nbsp;mm (gris si rareté 1–2, noir sinon), fond blanc. Image optionnelle centrée.</p>
+        <div class="row" style="margin-top:8px">
+          <div>
+            <label for="moveTarget">Déplacer</label>
+            <select id="moveTarget">
+              <option value="image">Image</option>
+              <option value="hex">Hexagone</option>
+            </select>
+          </div>
+          <div>
+            <label for="hexZoom">Hex: Zoom</label>
+            <input id="hexZoom" type="range" min="0.2" max="2.5" step="0.01" value="1" />
+            <span id="hexZoomVal" class="help">100%</span>
+          </div>
+        </div>
+        <p class="help">Bord 1&nbsp;mm (gris si rareté 1–2, noir sinon), fond blanc. Image optionnelle centrée. Utilise « Déplacer : Hexagone » pour bouger l'hexagone, molette = zoom.</p>
       </div>
 
       <div class="group">
@@ -216,7 +230,7 @@
     cadre: $('cadre'), rarete: $('rarete'), nom: $('nom'), pv: $('pv'), extension: $('extension'),
     illustrateur: $('illustrateur'), numero: $('numero'), description: $('description'),
     atk: $('atk'), atkspd: $('atkspd'), def: $('def'), defspd: $('defspd'), spd: $('spd'),
-    hexOn: $('hexOn'), hexFile: $('hexFile'),
+    hexOn: $('hexOn'), hexFile: $('hexFile'), moveTarget: $('moveTarget'), hexZoom: $('hexZoom'), hexZoomVal: $('hexZoomVal'),
     file: $('file'), zoom: $('zoom'), zoomVal: $('zoomVal'), export: $('export'), clear: $('clear'), resetImg: $('resetImg')
   };
 
@@ -227,13 +241,15 @@
   for(const k in ICON_MAP){ const im = new Image(); im.src = ICON_MAP[k]; rarityIcons[k] = im; }
 
   // Image optionnelle pour l'hexagone
-  let hexImg = null;
+  let hexImg = null; // image dans l'hexagone
+  let hexScale = 1;   // zoom de l'hexagone
+  let hexPos = null;  // position du centre de l'hexagone (définie au 1er draw)
 
   // État image importée + déplacement/zoom
   let img = null;      // HTMLImageElement
   let imgPos = { x: CARD_W/2, y: CARD_H/2 }; // centre de l’image (en px carte)
   let imgScale = 1;    // facteur de zoom
-  let dragging = false, dragStart = {x:0,y:0}, startPos={x:0,y:0};
+  let dragging = false, dragTarget='image', dragStart = {x:0,y:0}, startPos={x:0,y:0}, startHexPos={x:0,y:0};
 
   function loadImage(file){
     const reader = new FileReader();
@@ -263,8 +279,19 @@
   });
 
   // Drag
-  c.addEventListener('pointerdown', e => {
-    const rect = c.getBoundingClientRect();
+  c.addEventListener('pointerdown',e=>{
+    const rect=c.getBoundingClientRect(); const s=c.width/rect.width;
+    dragging=true; dragTarget = (inputs.moveTarget ? inputs.moveTarget.value : 'image');
+    dragStart={x:(e.clientX-rect.left)*s, y:(e.clientY-rect.top)*s};
+    startPos={...imgPos};
+    startHexPos={...(hexPos||{x:CARD_W*0.2,y:CARD_H*0.6})};
+    c.setPointerCapture(e.pointerId);
+  }); const s=c.width/rect.width;
+    dragging=true;
+    dragStart={x:(e.clientX-rect.left)*s, y:(e.clientY-rect.top)*s};
+    startPos={...imgPos};
+    c.setPointerCapture(e.pointerId);
+  });
     dragging = true;
     dragStart = { x: e.clientX - rect.left, y: e.clientY - rect.top };
     // convertir coords écran → coords canvas (selon taille CSS)
@@ -273,9 +300,18 @@
     startPos = { ...imgPos };
     c.setPointerCapture(e.pointerId);
   });
-  c.addEventListener('pointermove', e => {
-    if(!dragging || !img) return;
-    const rect = c.getBoundingClientRect();
+  c.addEventListener('pointermove',e=>{
+    if(!dragging) return; const rect=c.getBoundingClientRect(); const s=c.width/rect.width;
+    const cur={x:(e.clientX-rect.left)*s, y:(e.clientY-rect.top)*s};
+    if(dragTarget==='hex'){
+      if(!hexPos) hexPos = {x:CARD_W*0.2, y:CARD_H*0.6};
+      hexPos.x = startHexPos.x + (cur.x - dragStart.x);
+      hexPos.y = startHexPos.y + (cur.y - dragStart.y);
+    } else {
+      if(!img) return; imgPos.x = startPos.x + (cur.x - dragStart.x); imgPos.y = startPos.y + (cur.y - dragStart.y);
+    }
+    draw();
+  });
     const scale = c.width / rect.width;
     const cur = { x: (e.clientX - rect.left) * scale, y: (e.clientY - rect.top) * scale };
     imgPos.x = startPos.x + (cur.x - dragStart.x);
@@ -286,16 +322,22 @@
 
   // Molette = zoom fin
   c.addEventListener('wheel', e => {
-    if(!img) return;
     e.preventDefault();
-    const delta = -e.deltaY / 1000; // sens naturel
-    imgScale = Math.min(3, Math.max(0.2, imgScale * (1 + delta)));
-    inputs.zoom.value = imgScale.toFixed(2);
-    inputs.zoom.dispatchEvent(new Event('input'));
-  }, { passive:false });
+    const delta=-e.deltaY/1000;
+    const target = (inputs.moveTarget ? inputs.moveTarget.value : 'image');
+    if(target==='hex'){
+      hexScale = Math.min(2.5, Math.max(0.2, hexScale*(1+delta)));
+      if(inputs.hexZoom){ inputs.hexZoom.value = hexScale.toFixed(2); if(inputs.hexZoomVal) inputs.hexZoomVal.textContent = Math.round(hexScale*100)+'%'; }
+    } else {
+      if(!img) return;
+      imgScale=Math.min(3,Math.max(0.2,imgScale*(1+delta)));
+      inputs.zoom.value=imgScale.toFixed(2); if(inputs.zoomVal) inputs.zoomVal.textContent=Math.round(imgScale*100)+'%';
+    }
+    draw();
+  }, {passive:false});
 
-  inputs.zoom.addEventListener('input', () => {
-    imgScale = parseFloat(inputs.zoom.value);
+  inputs.zoom.addEventListener('input',()=>{ imgScale=parseFloat(inputs.zoom.value); if(inputs.zoomVal) inputs.zoomVal.textContent=Math.round(imgScale*100)+'%'; draw(); });
+  if(inputs.hexZoom){ inputs.hexZoom.addEventListener('input', ()=>{ hexScale=parseFloat(inputs.hexZoom.value); if(inputs.hexZoomVal) inputs.hexZoomVal.textContent=Math.round(hexScale*100)+'%'; draw(); }); }
     inputs.zoomVal.textContent = Math.round(imgScale*100)+"%";
     draw();
   });
@@ -374,28 +416,26 @@
   }
 
   function compartmentLeft(x,y,w,h, notchX, notchY, color){
-    // Compartiment gauche avec biseau en HAUT-DROIT (intérieur)
+    // Biseau en BAS-DROIT (intérieur) – demandé
     ctx.beginPath();
-    ctx.moveTo(x, y);                       // haut-gauche
-    ctx.lineTo(x + w - notchX, y);          // haut jusqu'avant le biseau
-    ctx.lineTo(x + w, y + notchY);          // biseau vers le bas côté intérieur
-    ctx.lineTo(x + w, y + h);               // descendre bord droit
-    ctx.lineTo(x, y + h);                   // bas
+    ctx.moveTo(x, y);                  // haut-gauche
+    ctx.lineTo(x + w, y);              // haut-droit
+    ctx.lineTo(x + w, y + h - notchY); // descendre avant biseau bas-droit
+    ctx.lineTo(x + w - notchX, y + h); // biseau vers gauche
+    ctx.lineTo(x, y + h);              // bas-gauche
     ctx.closePath();
-    ctx.fillStyle = color;
-    ctx.fill();
+    ctx.fillStyle = color; ctx.fill();
   }
   function compartmentRight(x,y,w,h, notchX, notchY, color){
-    // Compartiment droit avec biseau en HAUT-GAUCHE (intérieur)
+    // Biseau en BAS-GAUCHE (intérieur) – demandé
     ctx.beginPath();
-    ctx.moveTo(x + notchX, y);              // haut après biseau
-    ctx.lineTo(x + w, y);                   // haut jusqu'au coin droit
-    ctx.lineTo(x + w, y + h);               // descendre bord droit
-    ctx.lineTo(x, y + h);                   // bas
-    ctx.lineTo(x, y + notchY);              // remonter jusqu'au biseau
+    ctx.moveTo(x, y);                   // haut-gauche
+    ctx.lineTo(x + w, y);               // haut-droit
+    ctx.lineTo(x + w, y + h);           // bas-droit
+    ctx.lineTo(x + notchX, y + h);      // bas vers droite jusqu'au biseau
+    ctx.lineTo(x, y + h - notchY);      // biseau remontant
     ctx.closePath();
-    ctx.fillStyle = color;
-    ctx.fill();
+    ctx.fillStyle = color; ctx.fill();
   }
 
   function wrapText(text, maxWidth, fontPx){
@@ -460,30 +500,28 @@
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = `${pt(10)}px sans-serif`;
-    ctx.fillText((inputs.extension.value||'').trim(), leftBoxX + BOX_W/2, boxY + BOX_H/2);
-    ctx.fillText((inputs.pv.value||'').trim(), rightBoxX + BOX_W/2, boxY + BOX_H/2);
+    ctx.fillStyle='#fff'; ctx.fillText((inputs.extension.value||'').trim(), leftBoxX + BOX_W/2, boxY + BOX_H/2);
+    ctx.fillStyle='#fff'; ctx.fillText((inputs.pv.value||'').trim(), rightBoxX + BOX_W/2, boxY + BOX_H/2);
 
     // Zone texte ("bleue") collée en bas, pleine largeur intérieure, hauteur 30 mm
-    const zoneX = innerX;
-    const zoneW = innerW;
-    const zoneH = BLUE_H;
-    const zoneY = innerY + innerH - zoneH;
-
-    // Couleur selon rareté (opaque)
-    const r = parseInt(inputs.rarete.value, 10);
+    const zoneX=innerX, zoneW=innerW, zoneH=BLUE_H, zoneY=innerY+innerH-zoneH;
+    // Transparence légère pour 4–6
+    ctx.save();
+    const r=parseInt(inputs.rarete.value,10);
+    ctx.globalAlpha = (r>=4 ? 0.85 : 1);
     ctx.fillStyle = COLORS.zoneParRareté[r] || '#93BF34';
     ctx.fillRect(zoneX, zoneY, zoneW, zoneH);
+    ctx.restore();
 
     // Barre horizontale du cadre (au-dessus de la zone)
     drawHorizontalBar(cadreColor, zoneY);
 
     // Hexagone d'évolution (au-dessus de l'image et juste au-dessus de la zone)
     if(inputs.hexOn && inputs.hexOn.checked){
-      const hexDiameter = 10 * MM; // 1 cm
-      const cx = innerX + (hexDiameter/2) + (1*MM);
-      const cy = zoneY - (hexDiameter/2) - (1*MM);
-      const strokeColor = (r<=2 ? '#515859' : '#0D0D0D');
-      drawHexagonBadge(cx, cy, hexDiameter, strokeColor, 1*MM, hexImg);
+      if(!hexPos){ const hexD0=10*MM; hexPos={ x:innerX+hexD0/2+1*MM, y:zoneY-hexD0/2-1*MM } }
+      const hexD = 10*MM * hexScale;
+      const stroke=(r<=2?'#515859':'#0D0D0D');
+      drawHexagonBadge(hexPos.x, hexPos.y, hexD, stroke, 1*MM, hexImg);
     }
 
     // Barre horizontale du cadre (au-dessus de la zone)
@@ -548,8 +586,8 @@
     const num = (inputs.numero.value||'').trim();
 
     // Icône de rareté à côté du numéro
-    const iconSize = 7 * MM; // ~7 mm
-    const gapIcon = 1 * MM;
+    const iconSize = pt(6); // ~7 mm
+    const gapIcon = 4;
     const icon = rarityIcons[r];
     let numX = CARD_W - BORDER - m;
     let iconDrawn = false;

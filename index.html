@@ -252,22 +252,32 @@ c.addEventListener('wheel', e=>{
 
 /* Patterns cadre + barre alignée au BAS */
 function getCadrePattern(sel){
-  const img = sel==='gris' ? cadreTex.gris : sel==='noir' ? cadreTex.noir : null;
+  if(sel !== 'gris') return null;                 // ← pas de texture pour "noir" ni "invisible"
+  const img = cadreTex.gris;
   if(!img || !img.complete || !img.naturalWidth) return null;
   return ctx.createPattern(img,'repeat');
 }
 function drawFrame(style){ if(!style) return; ctx.fillStyle=style; ctx.fillRect(0,0,CARD_W,BORDER); ctx.fillRect(0,CARD_H-BORDER,CARD_W,BORDER); ctx.fillRect(0,0,BORDER,CARD_H); ctx.fillRect(CARD_W-BORDER,0,BORDER,CARD_H); }
 function drawHorizontalBarAligned(cadreSel, y){
-  const color = COLORS.cadre[cadreSel]; if(color===null) return;
-  const img = cadreSel==='gris' ? cadreTex.gris : cadreSel==='noir' ? cadreTex.noir : null;
-  let fillStyle = color;
+  if(cadreSel === 'invisible') return;
+
+  // Cadre noir = couleur pleine
+  if(cadreSel === 'noir'){
+    ctx.fillStyle = '#0D0D0D';
+    ctx.fillRect(BORDER, y-BORDER, CARD_W-2*BORDER, BORDER);
+    return;
+  }
+
+  // Cadre gris = texture alignée sur le bas
+  const img = cadreTex.gris;
+  let fillStyle = '#515859';
   if(img && img.complete && img.naturalWidth){
     const pat = ctx.createPattern(img,'repeat');
     if(pat.setTransform){
       const ht = img.naturalHeight || img.height;
-      const ref = (CARD_H - BORDER) % ht;   // haut du bord bas
+      const ref = (CARD_H - BORDER) % ht;   // haut du bord bas du cadre
       const cur = (y - BORDER) % ht;        // haut de la barre
-      const dy = ref - cur;                 // alignement bas
+      const dy  = ref - cur;                // aligne la barre avec le bas du cadre
       pat.setTransform(new DOMMatrix().translate(0, dy));
     }
     fillStyle = pat;

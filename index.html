@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Générateur TCG – 63 × 89 mm (300 DPI)</title>
+<title>Générateur TCG – multi-calques + rotation + export PNG</title>
 <style>
   :root{ --bg:#8C8C8C; --ui:#0b3890; --ui2:#0f44a9; --text:#ECF2FF; --shadow: rgba(0,0,0,.35); }
   *{box-sizing:border-box;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,Helvetica,sans-serif}
   html,body{height:100%}
   body{margin:0;background:var(--bg);color:var(--text);display:flex;flex-direction:column}
   header{background:var(--ui2);padding:10px 16px;font-weight:700}
-  .app{display:grid;grid-template-columns:360px 1fr;gap:16px;padding:16px;min-height:0;flex:1}
+  .app{display:grid;grid-template-columns:380px 1fr;gap:16px;padding:16px;min-height:0;flex:1}
   .panel{background:var(--ui);padding:12px;border-radius:12px;box-shadow:0 8px 30px var(--shadow);overflow:auto}
   .panel h2{margin:0 0 10px 0;font-size:18px}
   .group{margin-bottom:12px}
@@ -28,6 +28,7 @@
     border-radius:12px;box-shadow:0 8px 30px var(--shadow);position:relative}
   canvas{display:block;max-width:100%;height:auto;box-shadow:0 18px 50px var(--shadow);background:#fff}
   .foot{opacity:.8;margin-top:8px;font-size:12px}
+  .mini{font-size:12px;opacity:.85}
 </style>
 </head>
 <body>
@@ -122,6 +123,7 @@
       </div>
     </div>
 
+    <!-- HEXAGONE -->
     <div class="group">
       <label>Hexagone d'évolution (1 cm, image interne)</label>
       <div class="btns">
@@ -137,36 +139,53 @@
       </div>
     </div>
 
+    <!-- IMAGES (CALQUES) -->
     <div class="group">
-      <label>Image (arrière-plan)</label>
+      <label>Images (calques)</label>
       <div class="btns">
-        <input type="file" id="file" accept="image/*" />
-        <button id="resetImg" class="secondary">Réinitialiser l’image</button>
-        <button id="clearBg" class="secondary">Effacer image (arrière-plan)</button>
+        <input type="file" id="addFiles" accept="image/*" multiple />
+        <button id="deleteLayer" class="secondary">Supprimer le calque</button>
+        <button id="clearAll" class="secondary">Effacer toutes les images</button>
       </div>
-      <div class="row" style="align-items:center;margin-top:8px">
+      <div class="row" style="align-items:end;margin-top:8px">
         <div>
-          <label for="zoom">Zoom image</label>
-          <input id="zoom" type="range" min="0.2" max="3" step="0.01" value="1">
+          <label for="layerSelect">Calque actif</label>
+          <select id="layerSelect"></select>
+          <div class="mini">Astuce : clique sur l’image à déplacer pour la sélectionner rapidement.</div>
         </div>
+        <div>
+          <label for="zoom">Zoom (calque actif)</label>
+          <input id="zoom" type="range" min="0.1" max="4" step="0.01" value="1">
+          <div class="mini" id="zoomVal">100%</div>
+        </div>
+      </div>
+      <div class="row" style="align-items:end;margin-top:8px">
+        <div>
+          <label for="rotation">Rotation (°)</label>
+          <input id="rotation" type="range" min="-180" max="180" step="1" value="0">
+          <div class="mini" id="rotVal">0°</div>
+        </div>
+        <div class="btns" style="justify-content:flex-end">
+          <button id="rotM90" class="secondary">⟲ −90°</button>
+          <button id="rotP90" class="secondary">⟳ +90°</button>
+          <button id="rotReset" class="secondary">Reset</button>
+        </div>
+      </div>
+      <div class="row" style="align-items:end;margin-top:8px">
         <div>
           <label for="zoneScale">Zoom texture zone</label>
           <input id="zoneScale" type="range" min="0.25" max="3" step="0.01" value="1">
+          <div class="mini" id="zoneScaleVal">100%</div>
         </div>
-      </div>
-      <div class="row" style="font-size:12px;opacity:.85">
-        <div><span id="zoomVal">100%</span></div>
-        <div><span id="zoneScaleVal">100%</span></div>
       </div>
     </div>
 
     <div class="group btns">
       <button id="export">Télécharger PNG (300 DPI)</button>
-      <button id="clear" class="secondary">Effacer tout</button>
+      <button id="clear" class="secondary">Effacer tout (texte + paramètres)</button>
     </div>
 
-    <div class="foot">Icônes rareté : <code>images/C.png</code>, <code>PC.png</code>, <code>R.png</code>, <code>EP.png</code>, <code>L.png</code>, <code>EX.png</code>  
-    Textures zone : <code>images/1.png</code>…<code>images/6.png</code>.</div>
+    <div class="foot">Icônes rareté : <code>images/C.png</code>, <code>PC.png</code>, <code>R.png</code>, <code>EP.png</code>, <code>L.png</code>, <code>EX.png</code> — Textures : <code>images/1.png</code>…<code>images/6.png</code>.</div>
   </div>
 
   <div class="preview">
@@ -199,75 +218,205 @@ const c=$('card'), ctx=c.getContext('2d'); c.width=CARD_W; c.height=CARD_H;
 function setPreviewSize(){ const container=document.querySelector('.preview'); const maxW=Math.min(372,(container?container.clientWidth:372)-20); const cssW=Math.max(240,maxW); c.style.width=cssW+'px'; c.style.height=(cssW*89/63)+'px'; }
 window.addEventListener('resize', setPreviewSize);
 
-/* ====== État ====== */
-let img=null, imgPos={x:CARD_W/2,y:CARD_H/2}, imgScale=1;
-let hexImg=null, hexScale=1, hexPos=null, hexImgOffset={x:0,y:0};
-let zoneScale=1;
+/* ====== État IMAGES (multi-calques) ====== */
+let layers=[]; // {img, x,y, scale, rot, name, visible}
+let active=-1;
 
-/* ====== DOM ====== */
+function addLayerFromImg(img, name){
+  const layer={img, x:CARD_W/2, y:CARD_H/2, scale:1, rot:0, name:name||('Image '+(layers.length+1)), visible:true};
+  layers.push(layer); active=layers.length-1; refreshLayerUI(); draw();
+}
+function loadFiles(files){
+  [...files].forEach(file=>{
+    const r=new FileReader();
+    r.onload=e=>{
+      const i=new Image();
+      i.onload=()=>addLayerFromImg(i, file.name);
+      i.src=e.target.result;
+    };
+    r.readAsDataURL(file);
+  });
+}
+
+function refreshLayerUI(){
+  const sel=$('layerSelect'); sel.innerHTML='';
+  layers.forEach((l,idx)=>{
+    const opt=document.createElement('option');
+    opt.value=idx; opt.textContent=`${idx+1}. ${l.name}`;
+    sel.appendChild(opt);
+  });
+  if(active<0 && layers.length) active=0;
+  if(active>=layers.length) active=layers.length-1;
+  sel.value = (active>=0? String(active) : '');
+  // sync sliders
+  if(active>=0){
+    $('zoom').value = layers[active].scale.toFixed(2);
+    $('zoomVal').textContent = Math.round(layers[active].scale*100)+'%';
+    $('rotation').value = Math.round(layers[active].rot);
+    $('rotVal').textContent = Math.round(layers[active].rot)+'°';
+  } else {
+    $('zoom').value='1'; $('zoomVal').textContent='100%';
+    $('rotation').value='0'; $('rotVal').textContent='0°';
+  }
+}
+
+/* ====== Hexagone ====== */
+let hexImg=null, hexScale=1, hexPos=null, hexImgOffset={x:0,y:0};
 const inputs={
   cadre:$('cadre'), rarete:$('rarete'), nom:$('nom'), pv:$('pv'), extension:$('extension'),
   illustrateur:$('illustrateur'), numero:$('numero'), description:$('description'),
   atk:$('atk'), atkspd:$('atkspd'), def:$('def'), defspd:$('defspd'), spd:$('spd'),
-  file:$('file'), zoom:$('zoom'), zoomVal:$('zoomVal'), export:$('export'), clear:$('clear'), resetImg:$('resetImg'),
-  clearBg:$('clearBg'),
-  hexOn:$('hexOn'), hexFile:$('hexFile'), hexZoom:$('hexZoom'), hexZoomVal:$('hexZoomVal'),
-  clearHex:$('clearHex'),
+  addFiles:$('addFiles'), deleteLayer:$('deleteLayer'), clearAll:$('clearAll'),
+  layerSelect:$('layerSelect'), zoom:$('zoom'), zoomVal:$('zoomVal'), rotation:$('rotation'), rotVal:$('rotVal'),
+  rotM90:$('rotM90'), rotP90:$('rotP90'), rotReset:$('rotReset'),
+  export:$('export'), clear:$('clear'),
+  hexOn:$('hexOn'), hexFile:$('hexFile'), hexZoom:$('hexZoom'), hexZoomVal:$('hexZoomVal'), clearHex:$('clearHex'),
   zoneScale:$('zoneScale'), zoneScaleVal:$('zoneScaleVal')
 };
 
-/* ====== Chargements / resets ====== */
-function loadImage(file){ const r=new FileReader(); r.onload=e=>{ const i=new Image(); i.onload=()=>{ img=i; imgScale=1; imgPos={x:CARD_W/2,y:CARD_H/2}; draw(); }; i.src=e.target.result; }; r.readAsDataURL(file); }
-inputs.file.addEventListener('change', e=>{ if(e.target.files&&e.target.files[0]) loadImage(e.target.files[0]); });
-inputs.resetImg.addEventListener('click', ()=>{ imgScale=1; imgPos={x:CARD_W/2,y:CARD_H/2}; inputs.zoom.value='1'; inputs.zoomVal.textContent='100%'; draw(); });
-inputs.clearBg.addEventListener('click', ()=>{ img=null; inputs.file.value=''; imgScale=1; imgPos={x:CARD_W/2,y:CARD_H/2}; inputs.zoom.value='1'; inputs.zoomVal.textContent='100%'; draw(); });
+/* ====== Handlers UI fichiers ====== */
+inputs.addFiles.addEventListener('change', e=>{ if(e.target.files?.length){ loadFiles(e.target.files); inputs.addFiles.value=''; }});
+inputs.deleteLayer.addEventListener('click', ()=>{
+  if(active<0) return;
+  layers.splice(active,1);
+  active = Math.min(active, layers.length-1);
+  refreshLayerUI(); draw();
+});
+inputs.clearAll.addEventListener('click', ()=>{
+  layers=[]; active=-1; refreshLayerUI(); draw();
+});
 
+/* ====== Sliders calque actif ====== */
+inputs.zoom.addEventListener('input', ()=>{ if(active<0) return; const v=parseFloat(inputs.zoom.value); layers[active].scale=v; inputs.zoomVal.textContent=Math.round(v*100)+'%'; draw(); });
+inputs.rotation.addEventListener('input', ()=>{ if(active<0) return; const v=parseFloat(inputs.rotation.value); layers[active].rot=v; inputs.rotVal.textContent=Math.round(v)+'°'; draw(); });
+inputs.rotM90.addEventListener('click', ()=>{ if(active<0) return; layers[active].rot = normDeg(layers[active].rot-90); syncRot(); draw(); });
+inputs.rotP90.addEventListener('click', ()=>{ if(active<0) return; layers[active].rot = normDeg(layers[active].rot+90); syncRot(); draw(); });
+inputs.rotReset.addEventListener('click', ()=>{ if(active<0) return; layers[active].rot=0; syncRot(); draw(); });
+function normDeg(a){ a=((a%360)+360)%360; if(a>180) a-=360; return a; }
+function syncRot(){ inputs.rotation.value = Math.round(layers[active].rot); inputs.rotVal.textContent = Math.round(layers[active].rot)+'°'; }
+inputs.layerSelect.addEventListener('change', ()=>{ active=parseInt(inputs.layerSelect.value,10); refreshLayerUI(); draw(); });
+
+/* ====== Hexagone fichiers/zoom ====== */
 inputs.hexFile.addEventListener('change', e=>{
-  if(e.target.files&&e.target.files[0]){
-    const R=new FileReader();
-    R.onload=ev=>{ const i=new Image(); i.onload=()=>{ hexImg=i; hexImgOffset={x:0,y:0}; hexScale=1; inputs.hexZoom.value='1'; inputs.hexZoomVal.textContent='100%'; draw(); }; i.src=ev.target.result; };
-    R.readAsDataURL(e.target.files[0]);
-  }
+  if(!e.target.files?.[0]) return;
+  const R=new FileReader();
+  R.onload=ev=>{ const i=new Image(); i.onload=()=>{ hexImg=i; hexImgOffset={x:0,y:0}; hexScale=1; inputs.hexZoom.value='1'; inputs.hexZoomVal.textContent='100%'; draw(); }; i.src=ev.target.result; };
+  R.readAsDataURL(e.target.files[0]);
 });
 inputs.clearHex.addEventListener('click', ()=>{ hexImg=null; inputs.hexFile.value=''; hexScale=1; hexImgOffset={x:0,y:0}; inputs.hexZoom.value='1'; inputs.hexZoomVal.textContent='100%'; draw(); });
-
-/* ====== Sliders ====== */
-inputs.zoom.addEventListener('input', ()=>{ imgScale=parseFloat(inputs.zoom.value); inputs.zoomVal.textContent=Math.round(imgScale*100)+'%'; draw(); });
-inputs.zoneScale.addEventListener('input', ()=>{ zoneScale=parseFloat(inputs.zoneScale.value); inputs.zoneScaleVal.textContent=Math.round(zoneScale*100)+'%'; draw(); });
 inputs.hexZoom.addEventListener('input', ()=>{ hexScale=parseFloat(inputs.hexZoom.value); inputs.hexZoomVal.textContent=Math.round(hexScale*100)+'%'; draw(); });
 
-/* ====== Drag / Zoom ciblés ====== */
-let dragging=false, dragStart={x:0,y:0}, startPos={x:0,y:0}, startHexOffset={x:0,y:0}, dragTarget='mainimg';
+/* ====== Zone texture ====== */
+inputs.zoneScale.addEventListener('input', ()=>{ const v=parseFloat(inputs.zoneScale.value); inputs.zoneScaleVal.textContent=Math.round(v*100)+'%'; draw(); });
+
+/* ====== Export PNG robuste ====== */
+inputs.export.addEventListener('click', ()=>{
+  // Force un redraw (au cas où)
+  draw();
+  if(c.toBlob){
+    c.toBlob(blob=>{
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');
+      a.href=url;
+      a.download='carte_tcg_'+Date.now()+'.png';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url), 1000);
+    }, 'image/png', 1);
+  }else{
+    // Fallback
+    const a=document.createElement('a');
+    a.href=c.toDataURL('image/png');
+    a.download='carte_tcg_'+Date.now()+'.png';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+});
+
+/* ====== Effacer tout (texte + paramètres) ====== */
+inputs.clear.addEventListener('click', ()=>{
+  ['nom','pv','extension','illustrateur','numero','description','atk','atkspd','def','defspd','spd'].forEach(id=>$(id).value='');
+  inputs.rarete.value='1'; inputs.cadre.value='noir';
+  hexImg=null; inputs.hexFile.value=''; hexScale=1; hexImgOffset={x:0,y:0}; inputs.hexZoom.value='1'; inputs.hexZoomVal.textContent='100%';
+  inputs.zoneScale.value='1'; inputs.zoneScaleVal.textContent='100%';
+  // on ne touche pas aux calques (utilise "Effacer toutes les images" pour ça)
+  draw();
+});
+
+/* ====== Drag / wheel ciblés ====== */
+let dragging=false, dragStart={x:0,y:0}, startPos={x:0,y:0}, dragTarget=null, dragLayer=-1, startHexOffset={x:0,y:0};
 c.addEventListener('pointerdown', e=>{
-  const rect=c.getBoundingClientRect(); const s=c.width/rect.width; const px=(e.clientX-rect.left)*s, py=(e.clientY-rect.top)*s;
-  dragging=true; dragStart={x:px,y:py}; startPos={...imgPos}; startHexOffset={...hexImgOffset};
+  const {px,py,scaleCSS}=pointerToCanvas(e);
+  dragging=true; dragStart={x:px,y:py}; startHexOffset={...hexImgOffset};
+  dragTarget=null; dragLayer=-1;
+
+  // init hex pos
   const innerX=BORDER, innerY=BORDER, innerW=CARD_W-2*BORDER, innerH=CARD_H-2*BORDER; const zoneY=innerY+innerH-BLUE_H;
   if(!hexPos){ const d=10*MM; hexPos={x:innerX+d/2+1*MM, y:zoneY-d/2-1*MM}; }
-  let inside=false;
-  if(inputs.hexOn.checked){ const r=(10*MM)/2; const dx=px-hexPos.x, dy=py-hexPos.y; inside=(dx*dx+dy*dy)<=r*r; }
-  dragTarget = inside ? 'heximg' : 'mainimg';
+
+  // 1) test hexagone
+  let insideHex=false;
+  if(inputs.hexOn.checked){
+    const r=(10*MM)/2; const dx=px-hexPos.x, dy=py-hexPos.y; insideHex=(dx*dx+dy*dy)<=r*r;
+  }
+  if(insideHex){ dragTarget='heximg'; return; }
+
+  // 2) test calques (du haut vers le bas)
+  for(let i=layers.length-1;i>=0;i--){
+    if(hitLayer(layers[i], px, py)){ dragTarget='layer'; dragLayer=i; active=i; startPos={x:layers[i].x, y:layers[i].y}; refreshLayerUI(); break; }
+  }
+  // 3) si rien, mais un calque actif existe, on déplace le calque actif
+  if(!dragTarget && active>=0){ dragTarget='layer'; dragLayer=active; startPos={x:layers[active].x, y:layers[active].y}; }
   c.setPointerCapture?.(e.pointerId);
 });
 c.addEventListener('pointermove', e=>{
   if(!dragging) return;
-  const rect=c.getBoundingClientRect(); const s=c.width/rect.width; const px=(e.clientX-rect.left)*s, py=(e.clientY-rect.top)*s;
+  const {px,py}=pointerToCanvas(e);
   const dx=px-dragStart.x, dy=py-dragStart.y;
-  if(dragTarget==='heximg'){ hexImgOffset={x:startHexOffset.x+dx,y:startHexOffset.y+dy}; }
-  else { if(!img) return; imgPos={x:startPos.x+dx,y:startPos.y+dy}; }
-  draw();
+  if(dragTarget==='heximg'){ hexImgOffset={x:startHexOffset.x+dx,y:startHexOffset.y+dy}; draw(); return; }
+  if(dragTarget==='layer' && dragLayer>=0){ layers[dragLayer].x=startPos.x+dx; layers[dragLayer].y=startPos.y+dy; draw(); return; }
 });
 c.addEventListener('pointerup', e=>{ dragging=false; try{c.releasePointerCapture(e.pointerId);}catch(_){} });
 c.addEventListener('wheel', e=>{
   e.preventDefault();
-  const rect=c.getBoundingClientRect(); const s=c.width/rect.width; const px=(e.clientX-rect.left)*s, py=(e.clientY-rect.top)*s;
+  const {px,py}=pointerToCanvas(e);
   const delta=-e.deltaY/1000;
-  let inside=false; if(hexPos){ const r=(10*MM)/2; const dx=px-hexPos.x, dy=py-hexPos.y; inside=(dx*dx+dy*dy)<=r*r; }
-  if(inside){ hexScale=Math.min(2.5,Math.max(0.2,hexScale*(1+delta))); inputs.hexZoom.value=hexScale.toFixed(2); inputs.hexZoomVal.textContent=Math.round(hexScale*100)+'%'; }
-  else { if(!img) return; imgScale=Math.min(3,Math.max(0.2,imgScale*(1+delta))); inputs.zoom.value=imgScale.toFixed(2); inputs.zoomVal.textContent=Math.round(imgScale*100)+'%'; }
-  draw();
+
+  // hex focus ?
+  let insideHex=false;
+  if(hexPos && inputs.hexOn.checked){ const r=(10*MM)/2; const dx=px-hexPos.x, dy=py-hexPos.y; insideHex=(dx*dx+dy*dy)<=r*r; }
+  if(insideHex){
+    hexScale=Math.min(2.5,Math.max(0.2,hexScale*(1+delta)));
+    inputs.hexZoom.value=hexScale.toFixed(2); inputs.hexZoomVal.textContent=Math.round(hexScale*100)+'%'; draw(); return;
+  }
+  // sinon calque actif
+  if(active>=0){
+    const l=layers[active];
+    l.scale=Math.min(4,Math.max(0.1,l.scale*(1+delta)));
+    inputs.zoom.value=l.scale.toFixed(2); inputs.zoomVal.textContent=Math.round(l.scale*100)+'%';
+    draw();
+  }
 },{passive:false});
 
-/* ====== Anti-“jours” ====== */
+function pointerToCanvas(e){
+  const rect=c.getBoundingClientRect(); const s=c.width/rect.width;
+  return {px:(e.clientX-rect.left)*s, py:(e.clientY-rect.top)*s, scaleCSS:s};
+}
+function hitLayer(layer, px, py){
+  if(!layer.img || !layer.img.naturalWidth) return false;
+  const cover = Math.max(CARD_W/layer.img.width, CARD_H/layer.img.height);
+  const s = cover * layer.scale;
+  const w = layer.img.width*s, h = layer.img.height*s;
+  // inverse rot
+  const cos=Math.cos(-layer.rot*Math.PI/180), sin=Math.sin(-layer.rot*Math.PI/180);
+  const dx=px-layer.x, dy=py-layer.y;
+  const lx=dx*cos - dy*sin, ly=dx*sin + dy*cos;
+  return Math.abs(lx)<=w/2 && Math.abs(ly)<=h/2;
+}
+
+/* ====== Anti-“jours” & formes ====== */
 function fillCrispRect(x, y, w, h){
   const ax = Math.floor(x), ay = Math.floor(y);
   const aw = Math.ceil(x + w) - ax, ah = Math.ceil(y + h) - ay;
@@ -329,36 +478,33 @@ function drawZoneTextureClipped(img,x,y,w,h,alpha,scale){
 function draw(){
   ctx.clearRect(0,0,CARD_W,CARD_H);
 
-  // Rareté & style du cadre
-  const r = parseInt(inputs.rarete.value,10);
-  const userCadre = inputs.cadre.value;
+  // Rareté & cadre
+  const r = parseInt($('rarete').value,10);
+  const userCadre = $('cadre').value;
   const cadreSel  = (r<=3) ? 'noir' : userCadre; // 1–3 forcé noir
-  inputs.cadre.disabled = (r<=3);
-  if(r<=3 && inputs.cadre.value!=='noir') inputs.cadre.value='noir';
+  $('cadre').disabled = (r<=3);
+  if(r<=3 && $('cadre').value!=='noir') $('cadre').value='noir';
   const cadreStyle = (cadreSel==='noir') ? '#0D0D0D' : null;
 
   // Cadre / fond
   if(cadreStyle){ drawFrame(cadreStyle); }
-  else { ctx.fillStyle='#fff'; ctx.fillRect(0,0,CARD_W,CARD_H); } // fond blanc de base (recouvert par l'image)
+  else { ctx.fillStyle='#fff'; ctx.fillRect(0,0,CARD_W,CARD_H); } // fond neutre (recouvert par images)
 
   // Dimensions internes
   const innerX=BORDER, innerY=BORDER, innerW=CARD_W-2*BORDER, innerH=CARD_H-2*BORDER;
   const zoneH=BLUE_H, zoneY=innerY+innerH-zoneH;
 
-  // Image principale
-  if(img){
-    const cover=Math.max(CARD_W/img.width, CARD_H/img.height);
-    const s=cover*imgScale; const w=img.width*s, h=img.height*s;
-
-    if(cadreStyle){
-      // Cadre visible -> image CLIPPÉE à l'intérieur
-      ctx.save(); ctx.beginPath(); ctx.rect(innerX, innerY, innerW, innerH); ctx.clip();
-      ctx.drawImage(img, imgPos.x-w/2, imgPos.y-h/2, w, h);
-      ctx.restore();
-    } else {
-      // Cadre invisible -> image SUR TOUTE LA CARTE (pas de clipping)
-      ctx.drawImage(img, imgPos.x-w/2, imgPos.y-h/2, w, h);
-    }
+  // === IMAGES (calques) ===
+  for(const L of layers){
+    if(!L.img || !L.img.naturalWidth) continue;
+    const cover=Math.max(CARD_W/L.img.width, CARD_H/L.img.height);
+    const s=cover*L.scale; const w=L.img.width*s, h=L.img.height*s;
+    ctx.save();
+    if(cadreStyle){ ctx.beginPath(); ctx.rect(innerX, innerY, innerW, innerH); ctx.clip(); }
+    ctx.translate(L.x, L.y);
+    ctx.rotate(L.rot * Math.PI/180);
+    ctx.drawImage(L.img, -w/2, -h/2, w, h);
+    ctx.restore();
   }
 
   // Compartiments (noirs si cadre invisible)
@@ -369,24 +515,23 @@ function draw(){
 
   // Libellés (blanc)
   ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.font=`${pt(10)}px sans-serif`;
-  ctx.fillText((inputs.extension.value||'').trim(), leftBoxX+BOX_W/2, boxY+BOX_H/2);
-  ctx.fillText((inputs.pv.value||'').trim(),       rightBoxX+BOX_W/2, boxY+BOX_H/2);
+  ctx.fillText(($('extension').value||'').trim(), leftBoxX+BOX_W/2, boxY+BOX_H/2);
+  ctx.fillText(($('pv').value||'').trim(),       rightBoxX+BOX_W/2, boxY+BOX_H/2);
 
   // Coins "L" (r>=4 et cadre visible)
   if(r>=4 && cadreSel!=='invisible'){ drawTopCornerCaps(); }
 
   // Zone rareté
-  const alpha = (r>=4 ? 0.85 : 1);
-  const zImg = zoneTex[r];
+  const alpha = (r>=4 ? 0.85 : 1), zImg = zoneTex[r];
   if(zImg && zImg.complete && zImg.naturalWidth){
-    drawZoneTextureClipped(zImg, innerX, zoneY, innerW, zoneH, alpha, zoneScale);
+    drawZoneTextureClipped(zImg, innerX, zoneY, innerW, zoneH, alpha, parseFloat($('zoneScale').value));
   } else { ctx.save(); ctx.globalAlpha=alpha; ctx.fillStyle=COLORS.zone[r]; fillCrispRect(innerX, zoneY, innerW, zoneH); ctx.restore(); }
 
   // Barre horizontale (si cadre visible)
   if(cadreSel!=='invisible'){ drawHorizontalBar('#0D0D0D', zoneY); }
 
-  // Hexagone (toujours noir) + image interne – si coché
-  if(inputs.hexOn.checked){
+  // Hexagone (si coché)
+  if($('hexOn').checked){
     if(!hexPos){ const d=10*MM; hexPos={x:innerX + d/2 + 1*MM, y: zoneY - d/2 - 1*MM}; }
     const d=10*MM, rr=d/2, pts=[];
     for(let i=0;i<6;i++){ const ang=Math.PI/6 + i*Math.PI/3; pts.push({x:hexPos.x+rr*Math.cos(ang), y:hexPos.y+rr*Math.sin(ang)}); }
@@ -402,47 +547,37 @@ function draw(){
 
   /* ====== TEXTES ====== */
   const pad = 2*MM;
-
-  // Nom
   const titleY = zoneY + pad;
   ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillStyle='#0D0D0D';
   ctx.font = `700 ${pt(14)}px sans-serif`;
-  ctx.fillText((inputs.nom.value || '').toUpperCase(), innerX + innerW/2, titleY);
+  ctx.fillText(($('nom').value || '').toUpperCase(), innerX + innerW/2, titleY);
 
-  // Description (2 lignes max), 1 mm sous le nom
   const descTop = titleY + pt(14) + 1*MM;
   ctx.font = `${pt(10)}px sans-serif`;
   const maxW = innerW - pad*2;
-  const raw = (inputs.description.value || '').trim();
+  const raw = ($('description').value || '').trim();
   const words = raw.length ? raw.split(/\s+/) : [];
-  const lines = [];
-  let line = '';
-  for (const w of words){
-    const test = line ? line + ' ' + w : w;
-    if (ctx.measureText(test).width > maxW && line){ lines.push(line); line = w; }
-    else { line = test; }
-  }
-  if (line) lines.push(line);
-  const maxLines = 2;
-  for (let i = 0; i < Math.min(lines.length, maxLines); i++){
-    const txt = (i === maxLines - 1 && lines.length > maxLines) ? (lines[i] + '…') : lines[i];
+  const lines = []; let line = '';
+  for (const w of words){ const test=line?line+' '+w:w; if(ctx.measureText(test).width>maxW && line){ lines.push(line); line=w; } else { line=test; } }
+  if(line) lines.push(line);
+  const maxLines=2;
+  for(let i=0;i<Math.min(lines.length, maxLines); i++){
+    const txt=(i===maxLines-1 && lines.length>maxLines)?(lines[i]+'…'):lines[i];
     ctx.fillText(txt, innerX + innerW/2, descTop + i * pt(10) * 1.25);
   }
 
-  // Stats à niveau fixe
   const statsTop = descTop + maxLines * pt(10) * 1.25 + 2*MM;
   ctx.font = `${pt(8)}px sans-serif`; ctx.fillStyle='#0D0D0D';
   ctx.textAlign='left';
-  ctx.fillText(`Attaque : ${(inputs.atk.value || '')}`,        innerX + pad, statsTop);
-  ctx.fillText(`Vit.Attaque : ${(inputs.atkspd.value || '')}`, innerX + pad, statsTop + pt(8) * 1.25);
+  ctx.fillText(`Attaque : ${($('atk').value || '')}`,        innerX + pad, statsTop);
+  ctx.fillText(`Vit.Attaque : ${($('atkspd').value || '')}`, innerX + pad, statsTop + pt(8) * 1.25);
   ctx.textAlign='right';
-  ctx.fillText(`Défense : ${(inputs.def.value || '')}`,        innerX + innerW - pad, statsTop);
-  ctx.fillText(`Vit.Défense : ${(inputs.defspd.value || '')}`, innerX + innerW - pad, statsTop + pt(8) * 1.25);
+  ctx.fillText(`Défense : ${($('def').value || '')}`,        innerX + innerW - pad, statsTop);
+  ctx.fillText(`Vit.Défense : ${($('defspd').value || '')}`, innerX + innerW - pad, statsTop + pt(8) * 1.25);
 
-  // Bas : illustrateur / icône / numéro / vitesse
   const m=1*MM; ctx.textBaseline='alphabetic';
   ctx.textAlign='left'; ctx.font=`${pt(6)}px sans-serif`;
-  ctx.fillText((inputs.illustrateur.value||'').trim(), BORDER+m, CARD_H-BORDER-m);
+  ctx.fillText(($('illustrateur').value||'').trim(), BORDER+m, CARD_H-BORDER-m);
 
   const icon=rarityIcons[r], iconSize=pt(6), gap=4; let numX=CARD_W-BORDER-m;
   if(icon && icon.complete && icon.naturalWidth){
@@ -455,20 +590,20 @@ function draw(){
     ctx.fillText({1:'C',2:'PC',3:'R',4:'EP',5:'L',6:'EX'}[r]||'C', ix+iconSize/2, iy+iconSize/2); ctx.restore(); numX = ix - gap;
   }
   ctx.textAlign='right'; ctx.font=`${pt(6)}px sans-serif`;
-  ctx.fillText((inputs.numero.value||'').trim(), numX, CARD_H-BORDER-m);
+  ctx.fillText(($('numero').value||'').trim(), numX, CARD_H-BORDER-m);
 
-  const spd=(inputs.spd.value||'');
+  const spd=($('spd').value||'');
   if(spd){ ctx.textAlign='center'; ctx.font=`${pt(8)}px sans-serif`; ctx.fillText(`Vitesse : ${spd}`, CARD_W/2, CARD_H-BORDER-m); }
 }
 
-/* Redessiner instantanément quand on change un champ */
+/* Redessiner à chaque changement */
 ['input','change'].forEach(evt=>{
   ['cadre','rarete','nom','pv','extension','illustrateur','numero','description','atk','atkspd','def','defspd','spd','hexOn']
     .forEach(id=>$(id).addEventListener(evt, draw));
 });
 
 /* Boot */
-function boot(){ setPreviewSize(); draw(); }
+function boot(){ setPreviewSize(); refreshLayerUI(); draw(); }
 if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', boot); } else { boot(); }
 </script>
 </body>
